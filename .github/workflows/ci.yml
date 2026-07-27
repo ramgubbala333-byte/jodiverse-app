@@ -1,0 +1,36 @@
+name: CI
+
+# Runs a TypeScript typecheck on every push to main and every pull request that
+# touches the app. Catches broken code before it lands. Free — no secrets, no
+# infra. The Expo app lives in the jodiverse/ subfolder, so all steps run there.
+
+on:
+  push:
+    branches: [main]
+    paths: ['jodiverse/**', '.github/workflows/ci.yml']
+  pull_request:
+    paths: ['jodiverse/**', '.github/workflows/ci.yml']
+
+jobs:
+  typecheck:
+    name: Typecheck (tsc)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: jodiverse
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: jodiverse/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript check
+        run: npx tsc --noEmit
