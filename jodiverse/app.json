@@ -1,0 +1,28 @@
+{
+  "expo": {
+    "name": "Dosti Connect",
+    "slug": "jodiverse",
+    "scheme": "jodiverse",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0B0D14"
+    },
+    "ios": {
+      "bundleIdentifier": "com.jodiverse.app",
+      "supportsTablet": false
+    },
+    "android": {
+      "package": "com.jodiverse.app"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-asset",
+      "expo-web-browser",
+      "expo-video",
+      "expo-audio",
+      "expo-font"
+    ]
+  }
+}

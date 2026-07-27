@@ -1,0 +1,41 @@
+# ── Secrets & env ────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# ── Dependencies ─────────────────────────────────────────────
+node_modules/
+
+# ── Expo / React Native ──────────────────────────────────────
+.expo/
+dist/
+web-build/
+*.jsbundle
+.expo-shared/
+
+# ── Native build output ──────────────────────────────────────
+android/app/build/
+ios/build/
+*.keystore
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# ── Logs & caches ────────────────────────────────────────────
+*.log
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+.gradle/
+coverage/
+
+# ── Editor / OS ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# ── Claude Code local settings (machine-specific perms) ──────
+.claude/settings.local.json

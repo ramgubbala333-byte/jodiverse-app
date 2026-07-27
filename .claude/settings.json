@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Set-Location \"c:\\\\Users\\\\ramgu\\\\OneDrive\\\\Desktop\\\\jodiverse-app\\\\jodiverse\"; $env:CI=\"1\"; npx expo export --platform android --output-dir \"$env:TEMP\\\\jv-export-t7\" --no-minify 2>&1 | Select-Object -Last 6)",
+      "Bash(npx supabase *)",
+      "Bash(npx expo *)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "WebSearch",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(gh auth *)",
+      "Read(//c/Users/ramgu/OneDrive/Desktop/**)",
+      "Bash(sed 's/=.*/=<hidden>/' .env)"
+    ]
+  }
+}
