@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import GlowBackdrop from "../components/GlowBackdrop";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 // Mutual "talk again". Photos are still hidden/blurred at this point (the
@@ -20,6 +21,7 @@ export default function MatchedScreen() {
   const rise = useRef(new Animated.Value(30)).current;
 
   useEffect(() => {
+    haptic.success();
     Animated.stagger(90, [
       Animated.spring(popL, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
       Animated.spring(popR, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),

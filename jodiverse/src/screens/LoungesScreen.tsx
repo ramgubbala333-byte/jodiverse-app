@@ -6,6 +6,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
+import PressableScale from "../components/PressableScale";
 import { theme } from "../theme";
 
 type Lounge = { id: string; topic: string; title: string; listeners: number; speakers: number };
@@ -61,7 +62,7 @@ export default function LoungesScreen() {
       renderItem={({ item: l }) => {
         const total = l.listeners + l.speakers;
         return (
-          <TouchableOpacity style={s.card} activeOpacity={0.9}
+          <PressableScale style={s.card} scaleTo={0.97} haptics="light"
             onPress={() => nav.navigate("LoungeRoom", { loungeId: l.id, topic: l.topic, title: l.title })}>
             <LinearGradient colors={[...(GRAD[l.topic] ?? theme.grad)]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
@@ -78,7 +79,7 @@ export default function LoungesScreen() {
                 <Text style={s.emptyText}>Start the room</Text>
               )}
             </View>
-          </TouchableOpacity>
+          </PressableScale>
         );
       }}
     />

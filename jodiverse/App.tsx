@@ -37,6 +37,7 @@ import MatchProfileScreen from "./src/screens/MatchProfileScreen";
 import DashboardScreen from "./src/screens/DashboardScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { registerPush } from "./src/lib/push";
+import { haptic } from "./src/lib/haptics";
 import type { Session } from "@supabase/supabase-js";
 
 const Tab = createBottomTabNavigator();
@@ -70,6 +71,7 @@ function Tabs() {
   return (
     <Tab.Navigator
       initialRouteName="Talk"
+      screenListeners={{ tabPress: () => haptic.select() }}
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.gold,

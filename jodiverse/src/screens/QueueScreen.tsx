@@ -8,6 +8,9 @@ import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
 import { INTEREST_GROUPS, withEmoji } from "../lib/interests";
 import GlowBackdrop from "../components/GlowBackdrop";
+import GlassCard from "../components/GlassCard";
+import PressableScale from "../components/PressableScale";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 type Predicate = { label: string; matches: number };
@@ -59,6 +62,7 @@ export default function QueueScreen() {
          ...(status.subscribed ? [] : [{ text: "See plans", onPress: () => nav.navigate("Paywall") }])]);
       return;
     }
+    haptic.medium();
     setBusy(true);
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { setBusy(false); return; }
@@ -104,6 +108,7 @@ export default function QueueScreen() {
   };
 
   const goToCall = (callId: string, isCaller: boolean) => {
+    haptic.success();
     clearTimers();
     setEntryId(null);
     nav.navigate("Call", { callId, isCaller });
@@ -192,25 +197,27 @@ export default function QueueScreen() {
       </Text>
 
       {/* daily call count — talking is always free, this just shows today's tally */}
-      <TouchableOpacity style={[s.timeCard, status.remaining <= 0 && s.timeCardEmpty]}
-        onPress={() => !status.subscribed && nav.navigate("Paywall")}>
-        <Ionicons name="mic-circle-outline" size={22}
-          color={status.remaining <= 0 ? theme.danger : theme.gold} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.timeVal}>
-            {status.subscribed
-              ? `${status.remaining} calls left today · unlimited plan`
-              : status.remaining <= 0
-                ? "Out of free calls for today"
-                : `${status.remaining} of ${status.cap} free calls left today`}
-          </Text>
-          <Text style={s.timeSub}>
-            {status.remaining <= 0 ? "Resets tomorrow — or go unlimited with Plus"
-              : "Talking is always free · resets daily · 10 min max per call"}
-          </Text>
-        </View>
-        {!status.subscribed && <Text style={s.timeAdd}>Plus →</Text>}
-      </TouchableOpacity>
+      <PressableScale onPress={() => !status.subscribed && nav.navigate("Paywall")}
+        haptics={status.subscribed ? false : "light"} style={{ marginTop: 24 }}>
+        <GlassCard style={[s.timeCard, status.remaining <= 0 && s.timeCardEmpty]}>
+          <Ionicons name="mic-circle-outline" size={22}
+            color={status.remaining <= 0 ? theme.danger : theme.gold} />
+          <View style={{ flex: 1 }}>
+            <Text style={s.timeVal}>
+              {status.subscribed
+                ? `${status.remaining} calls left today · unlimited plan`
+                : status.remaining <= 0
+                  ? "Out of free calls for today"
+                  : `${status.remaining} of ${status.cap} free calls left today`}
+            </Text>
+            <Text style={s.timeSub}>
+              {status.remaining <= 0 ? "Resets tomorrow — or go unlimited with Plus"
+                : "Talking is always free · resets daily · 10 min max per call"}
+            </Text>
+          </View>
+          {!status.subscribed && <Text style={s.timeAdd}>Plus →</Text>}
+        </GlassCard>
+      </PressableScale>
 
       <Text style={s.label}>I want to talk about</Text>
       <Text style={s.labelHint}>{picked.length}/5 picked</Text>
@@ -226,8 +233,8 @@ export default function QueueScreen() {
         <Text style={s.editLink}>Edit my interests →</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={joinQueue} disabled={busy || picked.length === 0}
-        style={{ opacity: busy || picked.length === 0 ? 0.4 : 1, marginTop: 34 }}>
+      <PressableScale onPress={joinQueue} disabled={busy || picked.length === 0}
+        haptics={false} style={{ marginTop: 34 }}>
         <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={s.cta}>
           <Ionicons name="mic" size={19} color={theme.onGold} />
@@ -235,7 +242,7 @@ export default function QueueScreen() {
             {status.remaining <= 0 && !status.subscribed ? "See Plus to keep talking" : "Start talking"}
           </Text>
         </LinearGradient>
-      </TouchableOpacity>
+      </PressableScale>
       <Text style={s.quota}>You'll be connected instantly · calls cap at 10 minutes</Text>
       </ScrollView>
     </View>
@@ -269,10 +276,8 @@ const s = StyleSheet.create({
   h1: { color: theme.ink, fontSize: 32, fontFamily: theme.font.display, letterSpacing: -1,
     marginTop: 44, lineHeight: 38 },
   h1sub: { color: theme.muted, fontSize: 14.5, marginTop: 12, lineHeight: 21 },
-  timeCard: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 24,
-    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.lg, padding: 16, ...theme.shadow.card },
-  timeCardEmpty: { borderColor: theme.danger, backgroundColor: "rgba(224,103,79,.08)" },
+  timeCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
+  timeCardEmpty: { borderColor: theme.danger },
   timeVal: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 15 },
   timeSub: { color: theme.muted, fontSize: 12, marginTop: 3 },
   timeAdd: { color: theme.gold, fontFamily: theme.font.black, fontSize: 13 },

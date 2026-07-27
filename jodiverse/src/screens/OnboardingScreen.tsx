@@ -203,6 +203,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
         bio: bio.trim() || null,
       });
       if (error) throw error;
+      // Kick off semantic embedding (fire-and-forget) — powers meaning-based
+      // match_score. Never blocks finishing setup; failures are harmless.
+      supabase.functions.invoke("embed-profile").catch(() => {});
       for (let i = 0; i < photos.length; i++) await uploadPhoto(user.id, photos[i], i);
       onDone();
     } catch (e: any) {

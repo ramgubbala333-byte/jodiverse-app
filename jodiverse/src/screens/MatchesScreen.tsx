@@ -6,6 +6,8 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { deckPhotoUrls } from "../lib/photos";
+import PressableScale from "../components/PressableScale";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 type Match = {
@@ -84,10 +86,14 @@ export default function MatchesScreen() {
     ]);
   };
 
-  const openChat = (m: Match) =>
+  const openChat = (m: Match) => {
+    haptic.light();
     nav.navigate("Chat", { matchId: m.id, name: m.name, otherId: m.other });
-  const openProfile = (m: Match) =>
+  };
+  const openProfile = (m: Match) => {
+    haptic.light();
     nav.navigate("MatchProfile", { otherId: m.other, name: m.name, matchId: m.id });
+  };
 
   return (
     <View style={s.wrap}>
@@ -127,9 +133,9 @@ export default function MatchesScreen() {
                 {item.revealed ? "Photos revealed" : "Photos locked — reveal to unlock"}
               </Text>
             </TouchableOpacity>
-            <TouchableOpacity style={s.chatBtn} onPress={() => openChat(item)}>
+            <PressableScale style={s.chatBtn} haptics={false} onPress={() => openChat(item)}>
               <Ionicons name="chatbubble" size={17} color={theme.gold} />
-            </TouchableOpacity>
+            </PressableScale>
           </View>
         )}
       />

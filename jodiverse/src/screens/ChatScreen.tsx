@@ -8,6 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { pickPhoto, uploadChatImage, signChatPaths, deckPhotoUrls } from "../lib/photos";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 type Msg = { id: string; sender: string; body: string; image_path: string | null;
@@ -107,6 +108,7 @@ export default function ChatScreen() {
   const send = async () => {
     const body = text.trim();
     if (!body) return;
+    haptic.light();
     setText("");
     // Matches chat without limits — monetization lives on likes/boosts instead.
     const { error } = await supabase.from("messages")

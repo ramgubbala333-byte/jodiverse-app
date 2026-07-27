@@ -66,6 +66,8 @@ export default function ProfileScreen() {
     const { error } = await supabase.from("profiles")
       .update({ display_name: name.trim(), bio: bio.trim() || null, city: city.trim() || null })
       .eq("id", uid);
+    // Refresh the semantic embedding when the bio changes (fire-and-forget).
+    if (!error) supabase.functions.invoke("embed-profile").catch(() => {});
     Alert.alert(error ? "Save failed" : "Saved", error?.message ?? "Profile updated.");
   };
 

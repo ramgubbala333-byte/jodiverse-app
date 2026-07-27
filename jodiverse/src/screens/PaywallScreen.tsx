@@ -5,6 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import GlowBackdrop from "../components/GlowBackdrop";
+import GlassCard from "../components/GlassCard";
+import PressableScale from "../components/PressableScale";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 // Fair pricing: subscriptions sell REACH and INSIGHT, never a person's time.
@@ -84,7 +87,7 @@ export default function PaywallScreen() {
         {TIERS.map((t) => {
           const on = tierKey === t.key;
           return (
-            <TouchableOpacity key={t.key}
+            <PressableScale key={t.key} scaleTo={0.97} haptics="select"
               style={[s.tierTab, on
                 ? { borderColor: t.color, backgroundColor: t.color }
                 : { borderColor: theme.line }]}
@@ -93,7 +96,7 @@ export default function PaywallScreen() {
               {t.popular && (
                 <Text style={[s.popularMini, on && { color: theme.onGold }]}>MOST POPULAR</Text>
               )}
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
@@ -104,7 +107,7 @@ export default function PaywallScreen() {
         {tier.plans.map((p) => {
           const on = months === p.months;
           return (
-            <TouchableOpacity key={`${tier.key}-${p.months}`}
+            <PressableScale key={`${tier.key}-${p.months}`} scaleTo={0.97} haptics="select"
               style={[s.planCard, on && {
                 borderColor: tier.color, borderWidth: 2,
                 backgroundColor: `${tier.color}14`,
@@ -120,42 +123,42 @@ export default function PaywallScreen() {
                 ₹{p.perMonth}<Text style={s.planPer}>/mo</Text>
               </Text>
               {p.months > 1 && <Text style={s.planTotal}>₹{p.perMonth * p.months} billed {p.months === 3 ? "quarterly" : "yearly"}</Text>}
-            </TouchableOpacity>
+            </PressableScale>
           );
         })}
       </View>
 
-      {/* perks */}
-      <View style={s.perksCard}>
+      {/* perks — frosted glass panel over the aurora glow */}
+      <GlassCard style={s.perksCard}>
         {tier.perks.map((p) => (
           <View key={p} style={s.perkRow}>
             <Ionicons name="checkmark" size={15} color={tier.color} />
             <Text style={s.perk}>{p}</Text>
           </View>
         ))}
-      </View>
+      </GlassCard>
 
-      <TouchableOpacity onPress={() =>
+      <PressableScale haptics="medium" onPress={() =>
         Alert.alert("Almost there", "Subscriptions launch with the app — powered by RevenueCat + UPI.")}>
         <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
           <Text style={s.ctaText}>
             Get {tier.name} · {plan.label} for ₹{total}
           </Text>
         </LinearGradient>
-      </TouchableOpacity>
+      </PressableScale>
       <Text style={s.fine}>
         {plan.months === 1 ? "Recurring monthly billing" : `One payment of ₹${total}, renews every ${plan.months} months`} · cancel anytime · prices include GST
       </Text>
 
       {/* coins are a separate, cosmetic-only purchase */}
-      <TouchableOpacity style={s.coinsCard} onPress={() => nav.navigate("Coins")}>
+      <PressableScale style={s.coinsCard} onPress={() => nav.navigate("Coins")}>
         <Ionicons name="logo-bitcoin" size={22} color={theme.gold} />
         <View style={{ flex: 1 }}>
           <Text style={s.coinsTitle}>Just want to send a gift?</Text>
           <Text style={s.coinsSub}>Coins are for gifts, boosts &amp; profile extras — no subscription needed.</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-      </TouchableOpacity>
+      </PressableScale>
       </ScrollView>
     </View>
   );
@@ -184,8 +187,7 @@ const s = StyleSheet.create({
   planPrice: { color: theme.ink, fontSize: 18, fontFamily: theme.font.black },
   planPer: { color: theme.muted, fontSize: 11, fontFamily: theme.font.medium },
   planTotal: { color: theme.muted, fontSize: 9.5, marginTop: 4, textAlign: "center" },
-  perksCard: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.lg, padding: 18, marginBottom: 18, ...theme.shadow.card },
+  perksCard: { padding: 18, marginBottom: 18 },
   perkRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 9 },
   perk: { color: theme.ink, fontSize: 13, flex: 1 },
   cta: { borderRadius: 999, padding: 17, alignItems: "center", ...theme.shadow.cta },

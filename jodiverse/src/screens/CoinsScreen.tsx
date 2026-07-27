@@ -7,6 +7,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
+import PressableScale from "../components/PressableScale";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 // Payments aren't live yet — RevenueCat wires in later. Until then, tapping a
@@ -43,6 +45,7 @@ export default function CoinsScreen() {
     setBusy(null);
     if (error) { Alert.alert("Couldn't add coins", error.message); return; }
     setBalance(data ?? null);
+    haptic.success();
     Alert.alert("Coins added 🪙", `${p.coins.toLocaleString()} coins added — you have ${(data ?? 0).toLocaleString()}.`,
       [{ text: "Nice", onPress: () => nav.goBack() }]);
   };
@@ -66,7 +69,7 @@ export default function CoinsScreen() {
       </Text>
 
       {PACKS.map((p) => (
-        <TouchableOpacity key={p.coins} style={[s.pack, p.best && s.packBest]}
+        <PressableScale key={p.coins} style={[s.pack, p.best && s.packBest]}
           onPress={() => buy(p)} disabled={busy !== null}>
           <View style={s.packLeft}>
             <Text style={s.packCoins}>{p.coins.toLocaleString()} coins</Text>
@@ -78,7 +81,7 @@ export default function CoinsScreen() {
               ? <ActivityIndicator color={theme.onGold} />
               : <Text style={s.packPrice}>₹{p.price}</Text>}
           </View>
-        </TouchableOpacity>
+        </PressableScale>
       ))}
 
       <View style={s.spendCard}>

@@ -12,6 +12,7 @@ import { signMediaPath } from "../lib/media";
 import { withEmoji } from "../lib/interests";
 import { createTransport, VOICE_MODE, type CallState } from "../lib/voice";
 import GlowBackdrop from "../components/GlowBackdrop";
+import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 const REPORT_REASONS = ["Inappropriate language", "Harassment", "Scam / asking for money",
@@ -211,17 +212,17 @@ export default function CallScreen() {
       {/* controls */}
       <View style={s.controls}>
         <TouchableOpacity style={[s.ctrl, muted && s.ctrlOn]}
-          onPress={() => { const m = !muted; setMuted(m); transport.setMuted(m); }}>
+          onPress={() => { haptic.select(); const m = !muted; setMuted(m); transport.setMuted(m); }}>
           <Ionicons name={muted ? "mic-off" : "mic"} size={23}
             color={muted ? theme.onGold : theme.ink} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={s.hangUp} onPress={hangUp}>
+        <TouchableOpacity style={s.hangUp} onPress={() => { haptic.medium(); hangUp(); }}>
           <Ionicons name="call" size={28} color="#fff" style={{ transform: [{ rotate: "135deg" }] }} />
         </TouchableOpacity>
 
         <TouchableOpacity style={[s.ctrl, speaker && s.ctrlOn]}
-          onPress={() => { const v = !speaker; setSpeaker(v); transport.setSpeaker(v); }}>
+          onPress={() => { haptic.select(); const v = !speaker; setSpeaker(v); transport.setSpeaker(v); }}>
           <Ionicons name={speaker ? "volume-high" : "volume-low"} size={23}
             color={speaker ? theme.onGold : theme.ink} />
         </TouchableOpacity>
