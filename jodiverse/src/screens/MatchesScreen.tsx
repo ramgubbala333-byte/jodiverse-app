@@ -1,6 +1,6 @@
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Alert, Animated, Easing,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
@@ -26,6 +26,12 @@ export default function MatchesScreen() {
   const nav = useNavigation<any>();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const listIn = useRef(new Animated.Value(0)).current;   // P4 entrance
+
+  useEffect(() => {
+    Animated.timing(listIn, { toValue: 1, duration: 420,
+      easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+  }, [listIn]);
 
   useFocusEffect(useCallback(() => {
     (async () => {
@@ -100,6 +106,8 @@ export default function MatchesScreen() {
       <Text style={s.title}>Matches</Text>
       <Text style={s.sub}>People you both wanted to keep talking to.</Text>
 
+      <Animated.View style={{ flex: 1, opacity: listIn,
+        transform: [{ translateY: listIn.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
       <FlatList
         data={matches}
         keyExtractor={(m) => m.id}
@@ -139,6 +147,7 @@ export default function MatchesScreen() {
           </View>
         )}
       />
+      </Animated.View>
     </View>
   );
 }

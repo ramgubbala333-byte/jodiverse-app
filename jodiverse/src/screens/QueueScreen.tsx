@@ -18,6 +18,8 @@ const POLL_MS = 2500;      // matchmaker tick
 const FALLBACK_AFTER = 30; // seconds before we stop making people wait
 
 type CallStatus = { used: number; cap: number; remaining: number; subscribed: boolean };
+type Pick = { id: string; name: string; age: number | null; city: string | null;
+  shared_interests: string[]; reason: string; score: number };
 
 // Voice discovery. Two taps to set tonight's intent, then a queue that
 // narrates what it's looking for instead of showing a spinner.
@@ -26,12 +28,14 @@ export default function QueueScreen() {
   const [myInterests, setMyInterests] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [status, setStatus] = useState<CallStatus>({ used: 0, cap: 3, remaining: 3, subscribed: false });
+  const [picks, setPicks] = useState<Pick[]>([]);
   const [entryId, setEntryId] = useState<string | null>(null);
   const [preds, setPreds] = useState<Predicate[]>([]);
   const [waited, setWaited] = useState(0);
   const [busy, setBusy] = useState(false);
   const timers = useRef<ReturnType<typeof setInterval>[]>([]);
   const fade = useRef(new Animated.Value(0)).current;
+  const picksIn = useRef(new Animated.Value(0)).current;   // P2 section entrance
 
   const clearTimers = () => { timers.current.forEach(clearInterval); timers.current = []; };
 
@@ -39,17 +43,29 @@ export default function QueueScreen() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: prof }, { data: st }] = await Promise.all([
+      const [{ data: prof }, { data: st }, { data: pk }] = await Promise.all([
         supabase.from("profiles").select("interests").eq("id", user.id).maybeSingle(),
         supabase.rpc("my_call_status"),
+        supabase.rpc("daily_picks"),
       ]);
       const ints = prof?.interests ?? [];
       setMyInterests(ints);
       setPicked((p) => (p.length ? p : ints.slice(0, 3)));
       if (st) setStatus(st as CallStatus);
+      if (pk && (pk as Pick[]).length) {
+        setPicks(pk as Pick[]);
+        // P4 · fade + rise the picks row in once it loads
+        Animated.timing(picksIn, { toValue: 1, duration: 460,
+          easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
+      }
     })();
     return () => { clearTimers(); };
   }, []));
+
+  // Set the queue's interests to match a pick's shared vibe.
+  const tuneToPick = (pk: Pick) => {
+    if (pk.shared_interests?.length) setPicked(pk.shared_interests.slice(0, 5));
+  };
 
   // ── queue lifecycle ─────────────────────────────────────────────────────
   const joinQueue = async () => {
@@ -219,6 +235,37 @@ export default function QueueScreen() {
         </GlassCard>
       </PressableScale>
 
+      {/* P2 · Today's picks — who you'd click with, and why (metadata-only) */}
+      {picks.length > 0 && (
+        <Animated.View style={{
+          opacity: picksIn,
+          transform: [{ translateY: picksIn.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+        }}>
+          <Text style={s.picksTitle}>Today's picks</Text>
+          <Text style={s.picksSub}>People we think you'll click with — tap one to tune your search.</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 12, paddingVertical: 4, paddingRight: 6 }}>
+            {picks.map((pk) => (
+              <PressableScale key={pk.id} style={s.pickCard} haptics="light" onPress={() => tuneToPick(pk)}>
+                <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={s.pickAvatar}>
+                  <Text style={s.pickInitial}>{pk.name?.[0]?.toUpperCase() ?? "?"}</Text>
+                </LinearGradient>
+                <Text style={s.pickName} numberOfLines={1}>
+                  {pk.name}{pk.age ? `, ${pk.age}` : ""}
+                </Text>
+                {pk.city ? <Text style={s.pickCity} numberOfLines={1}>{pk.city}</Text> : null}
+                <Text style={s.pickReason} numberOfLines={3}>{pk.reason}</Text>
+                <View style={s.pickCta}>
+                  <Ionicons name="sparkles" size={12} color={theme.gold} />
+                  <Text style={s.pickCtaText}>Find people like this</Text>
+                </View>
+              </PressableScale>
+            ))}
+          </ScrollView>
+        </Animated.View>
+      )}
+
       <Text style={s.label}>I want to talk about</Text>
       <Text style={s.labelHint}>{picked.length}/5 picked</Text>
       <View style={s.chipWrap}>
@@ -281,6 +328,19 @@ const s = StyleSheet.create({
   timeVal: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 15 },
   timeSub: { color: theme.muted, fontSize: 12, marginTop: 3 },
   timeAdd: { color: theme.gold, fontFamily: theme.font.black, fontSize: 13 },
+  picksTitle: { color: theme.ink, fontSize: 18, fontFamily: theme.font.displayMd,
+    letterSpacing: -0.3, marginTop: 30 },
+  picksSub: { color: theme.muted, fontSize: 12.5, marginTop: 4, marginBottom: 12, lineHeight: 17 },
+  pickCard: { width: 162, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, padding: 14, ...theme.shadow.card },
+  pickAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center",
+    justifyContent: "center", ...theme.shadow.cta },
+  pickInitial: { color: "#fff", fontFamily: theme.font.black, fontSize: 18 },
+  pickName: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14.5, marginTop: 10 },
+  pickCity: { color: theme.muted, fontSize: 11.5, marginTop: 2 },
+  pickReason: { color: theme.ink, fontSize: 12, lineHeight: 16.5, marginTop: 8, opacity: 0.85, minHeight: 50 },
+  pickCta: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10 },
+  pickCtaText: { color: theme.gold, fontSize: 11.5, fontFamily: theme.font.bold },
   label: { color: theme.ink, fontSize: 16, fontFamily: theme.font.bold, marginTop: 32 },
   labelHint: { color: theme.muted, fontSize: 12, marginTop: 3, marginBottom: 12 },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

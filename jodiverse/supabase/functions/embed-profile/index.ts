@@ -20,15 +20,23 @@ Deno.serve(async (req) => {
     const { data: { user } } = await userClient.auth.getUser();
     if (!user) return json({ error: "not_authenticated" }, 401);
 
-    // RLS lets a user read their own row.
+    // RLS lets a user read their own row. Pull the RICH onboarding signal (P3) —
+    // not just interests + bio — so semantic matching reflects the whole person.
     const { data: prof } = await userClient
-      .from("profiles").select("interests, bio").eq("id", user.id).maybeSingle();
+      .from("profiles")
+      .select("interests, bio, occupation, values_text, fun_facts, relationship_goal, lifestyle")
+      .eq("id", user.id).maybeSingle();
 
+    const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
     const interests: string[] = Array.isArray(prof?.interests) ? prof!.interests : [];
-    const bio = typeof prof?.bio === "string" ? prof!.bio : "";
     const text = [
       interests.length ? `Interests: ${interests.join(", ")}.` : "",
-      bio ? `About: ${bio}` : "",
+      str(prof?.occupation) ? `Work: ${str(prof?.occupation)}.` : "",
+      str(prof?.relationship_goal) ? `Looking for: ${str(prof?.relationship_goal)}.` : "",
+      str(prof?.lifestyle) ? `Lifestyle: ${str(prof?.lifestyle)}.` : "",
+      str(prof?.values_text) ? `Values: ${str(prof?.values_text)}.` : "",
+      str(prof?.fun_facts) ? `Fun facts: ${str(prof?.fun_facts)}.` : "",
+      str(prof?.bio) ? `Bio: ${str(prof?.bio)}` : "",
     ].filter(Boolean).join(" ").trim();
 
     if (!text) return json({ error: "no_signal", note: "add interests or a bio first" }, 400);

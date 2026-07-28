@@ -40,23 +40,33 @@ Ordered by value-to-effort. ✅ = already shipped.
 3. Existing users re-embed on their next bio save; new users on signup.
 **Cost:** ₹0 (gte-small runs in the edge runtime). **Voice-first preserved.**
 
-## P2 — "Today's picks" with a written why-you-click
-**What:** 3 suggested people to call today, each with a one-line, honest reason
-("You both love live music and late-night talks").
-**How:** a `daily_picks(uid)` RPC ranks by the P1 score; a lightweight edge
-function (reuse the `generate-profile` Claude pattern) writes the blurb from
-*shared interests + call-metadata traits only* — never appearance, never audio
-content (keeps our stated privacy/ethics rules). Cache one blurb per pair/day.
-**Effort:** medium. **Guardrail:** respects existing `reveal_state` (no photos in picks).
+## ✅ P2 — "Today's picks" (BUILT 2026-07-27 — run v18 SQL to activate)
+Up to 3 people you'd most click with today, each with an honest reason.
+**Built:**
+- `daily-picks-v18.sql` — `daily_picks()` RPC. Filters candidates through the SAME
+  `voice_compatible` eligibility as live matching (age/gender prefs, blocks,
+  calls-left), excludes already-matched + called-in-last-3-days, ranks by
+  `match_score` (incl. the v17 semantic term), returns top 3 with a composed,
+  **metadata-only** reason (shared interests → language → vibe). No photos.
+- UI: a horizontal "Today's picks" row on the Talk queue. Tapping a card **tunes
+  the queue** to that person's shared interests (voice-first — no broken
+  direct-call button, since there's no receiver-side incoming-call listener yet).
+**⚠️ TO ACTIVATE:** run `supabase/daily-picks-v18.sql` in the SQL editor.
+**Future:** a global incoming-call listener would unlock true "call this pick"
+(also fixes Lounge invites).
 
-## P3 — Deeper onboarding
-Grow the 4-step builder toward richer signal (looking-for, age range, languages,
-a voice-prompt answer) — better data feeds P1/P2. Reuse existing Onboarding UI.
+## ✅ P3 — Richer embedding signal (BUILT + DEPLOYED 2026-07-27)
+Onboarding already collects a lot, so the win was USING it: `embed-profile` now
+embeds interests + **occupation + relationship_goal + lifestyle + values + fun
+facts + bio** (not just interests+bio) → far better semantic matching, zero new
+onboarding UI. Deployed. Existing users refresh their vector on next bio save.
 
-## P4 — Reanimated-grade motion (optional)
-If we want shared-element transitions / gesture-driven sheets beyond the current
-`Animated` API, add `react-native-reanimated` (needs the babel plugin). Defer
-until the above ship — current `Animated` covers the polish pass.
+## ✅ P4 — Motion polish (DONE 2026-07-27)
+Delivered with the built-in `Animated` API (native-thread, useNativeDriver —
+smooth, zero new deps): Today's-picks row fades + rises in; Matches list fades
+in on mount (on top of the P0 spring/haptic layer). **Full `react-native-
+reanimated` deliberately deferred** — we have no gesture-driven sheets that need
+it yet, and its babel-plugin change is best validated on a device build.
 
 ---
 
