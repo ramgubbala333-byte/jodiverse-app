@@ -7,13 +7,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
-import { signInWithGoogle } from "../lib/auth";
+import { signInWithGoogle, signInWithFacebook, sendPhoneOtp, verifyPhoneOtp } from "../lib/auth";
 import GlowBackdrop from "../components/GlowBackdrop";
 import { theme } from "../theme";
-
-// Phone OTP is built but OFF until Twilio (+ India DLT) is configured —
-// flip to true and set up Supabase → Auth → Phone before store launch.
-const PHONE_AUTH_ENABLED = false;
 
 const GENDERS = ["Woman", "Man", "Non-binary"] as const;
 
@@ -39,8 +35,12 @@ const STORIES = [
 // birthdate and gender collected here travel via auth user metadata.
 export default function AuthScreen() {
   const insets = useSafeAreaInsets();
-  const [page, setPage] = useState<"landing" | "up" | "in">("landing");
+  const [page, setPage] = useState<"landing" | "auth" | "otp" | "up" | "in">("landing");
   const [busy, setBusy] = useState(false);
+
+  const [cc] = useState("+91");
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -95,7 +95,135 @@ export default function AuthScreen() {
     }
   };
 
-  // ── Step 1 of 4: Create Your Account ────────────────────────────────────
+  const goFacebook = async () => {
+    setBusy(true);
+    try {
+      await signInWithFacebook();
+    } catch (e: any) {
+      Alert.alert("Facebook sign-in",
+        /not enabled|unsupported|provider/i.test(e.message ?? "")
+          ? "Facebook login isn't switched on yet — use Google or phone for now."
+          : e.message ?? String(e));
+    } finally { setBusy(false); }
+  };
+
+  const digits = () => phone.replace(/[^0-9]/g, "");
+  const fullPhone = () => `${cc}${digits()}`;
+
+  const sendOtp = async () => {
+    if (digits().length < 7) { Alert.alert("Enter a valid mobile number"); return; }
+    setBusy(true);
+    try {
+      await sendPhoneOtp(fullPhone());
+      setOtp("");
+      setPage("otp");
+    } catch (e: any) {
+      Alert.alert("Couldn't send code",
+        /provider|not enabled|not configured|unsupported|sms/i.test(e.message ?? "")
+          ? "Phone login isn't switched on yet (it needs an SMS provider set up). Use Google for now."
+          : e.message ?? String(e));
+    } finally { setBusy(false); }
+  };
+
+  const doVerifyOtp = async () => {
+    if (otp.trim().length < 4) return;
+    setBusy(true);
+    try {
+      await verifyPhoneOtp(fullPhone(), otp.trim());
+      // onAuthStateChange in App.tsx routes: new number → Onboarding, existing → app.
+    } catch (e: any) {
+      Alert.alert("Wrong or expired code", e.message ?? String(e));
+    } finally { setBusy(false); }
+  };
+
+  // ── Log in / sign up hub — phone OTP · Google · Facebook · email ────────
+  if (page === "auth" || page === "otp") {
+    return (
+      <KeyboardAvoidingView style={s.wrap} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+        <GlowBackdrop />
+        <View style={[s.topBar, { paddingTop: 14 + insets.top, backgroundColor: "transparent",
+          borderBottomWidth: 0 }]}>
+          <TouchableOpacity onPress={() => setPage(page === "otp" ? "auth" : "landing")}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="arrow-back" size={22} color={theme.ink} />
+          </TouchableOpacity>
+          <Text style={s.brandSmall}>Dosti Connect</Text>
+          <View style={{ width: 22 }} />
+        </View>
+
+        <ScrollView contentContainerStyle={[s.formBody, { paddingBottom: 40 + insets.bottom }]}
+          keyboardShouldPersistTaps="handled">
+          <View style={s.heroIcon}><Ionicons name="chatbubbles" size={30} color="#fff" /></View>
+
+          {page === "auth" ? (
+            <>
+              <Text style={s.formTitle}>Log in or sign up</Text>
+              <Text style={s.formSub}>Talk first. Find your connection.</Text>
+
+              <Text style={s.fieldLabel}>Mobile number</Text>
+              <View style={s.phoneRow}>
+                <View style={s.ccBox}><Text style={s.ccText}>{cc}</Text></View>
+                <TextInput style={[s.input, { flex: 1 }]} placeholder="Enter mobile number"
+                  keyboardType="phone-pad" value={phone} onChangeText={setPhone}
+                  maxLength={12} placeholderTextColor={theme.muted} />
+              </View>
+              <Text style={s.hint}>We never share your number with anyone.</Text>
+
+              <TouchableOpacity disabled={busy || digits().length < 7} onPress={sendOtp}
+                style={{ opacity: busy || digits().length < 7 ? 0.5 : 1, marginTop: 16 }}>
+                <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
+                  <Text style={s.ctaText}>Get OTP</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+
+              <View style={s.orRow}>
+                <View style={s.orLine} /><Text style={s.orText}>or</Text><View style={s.orLine} />
+              </View>
+
+              <TouchableOpacity style={s.socialBtn} onPress={goGoogle} disabled={busy}>
+                <Ionicons name="logo-google" size={18} color={theme.ink} />
+                <Text style={s.socialText}>Continue with Google</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={s.socialBtn} onPress={goFacebook} disabled={busy}>
+                <Ionicons name="logo-facebook" size={18} color="#1877F2" />
+                <Text style={s.socialText}>Continue with Facebook</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setPage("up")}>
+                <Text style={s.switch}>Prefer email? Sign up with email</Text>
+              </TouchableOpacity>
+
+              <Text style={s.legal}>
+                By proceeding you accept our Community Guidelines & Terms of Use. We never sell your data.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={s.formTitle}>Enter the code</Text>
+              <Text style={s.formSub}>We sent a 6-digit code to {cc} {phone}</Text>
+              <TextInput style={[s.input, s.otpInput]} placeholder="––––––"
+                keyboardType="number-pad" value={otp} onChangeText={setOtp} maxLength={6}
+                placeholderTextColor={theme.muted} autoFocus />
+              <TouchableOpacity disabled={busy || otp.trim().length < 4} onPress={doVerifyOtp}
+                style={{ opacity: busy || otp.trim().length < 4 ? 0.5 : 1, marginTop: 16 }}>
+                <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
+                  <Text style={s.ctaText}>Verify &amp; continue</Text>
+                </LinearGradient>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={sendOtp} disabled={busy}>
+                <Text style={s.switch}>Resend code</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setPage("auth")}>
+                <Text style={[s.switch, { color: theme.muted, marginTop: 8 }]}>Change number</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // ── Step 1 of 4: Create Your Account (email) ────────────────────────────
   if (page === "up" || page === "in") {
     const up = page === "up";
     return (
@@ -209,8 +337,8 @@ export default function AuthScreen() {
           <Ionicons name="heart" size={20} color={theme.gold} />
           <Text style={s.brand}>Dosti Connect</Text>
         </View>
-        <TouchableOpacity style={s.signUpPill} onPress={() => setPage("up")}>
-          <Text style={s.signUpPillText}>Sign Up</Text>
+        <TouchableOpacity style={s.signUpPill} onPress={() => setPage("auth")}>
+          <Text style={s.signUpPillText}>Log in</Text>
         </TouchableOpacity>
       </View>
 
@@ -221,7 +349,7 @@ export default function AuthScreen() {
           No photos, no swiping. Get instantly connected for a real voice conversation
           with someone who shares your interests — and let the chemistry lead.
         </Text>
-        <TouchableOpacity onPress={() => setPage("up")}>
+        <TouchableOpacity onPress={() => setPage("auth")}>
           <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
             <Text style={s.ctaText}>Start Talking</Text>
           </LinearGradient>
@@ -291,13 +419,13 @@ export default function AuthScreen() {
         <View style={s.finalCard}>
           <Text style={s.finalTitle}>Ready to Find Your{"\n"}Soulmate?</Text>
           <Text style={s.finalSub}>Start your journey to meaningful connections today</Text>
-          <TouchableOpacity onPress={() => setPage("up")}>
+          <TouchableOpacity onPress={() => setPage("auth")}>
             <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
               <Text style={s.ctaText}>Get Started – It's Free</Text>
             </LinearGradient>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => setPage("in")}>
-            <Text style={s.switch}>Already a member? Sign in</Text>
+          <TouchableOpacity onPress={() => setPage("auth")}>
+            <Text style={s.switch}>Already a member? Log in</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -391,6 +519,18 @@ const s = StyleSheet.create({
     marginBottom: 8 },
   input: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
     borderRadius: theme.radii.md, padding: 15, fontSize: 15, color: theme.ink },
+  phoneRow: { flexDirection: "row", gap: 10, alignItems: "stretch" },
+  ccBox: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.md, paddingHorizontal: 14, justifyContent: "center" },
+  ccText: { color: theme.ink, fontSize: 15, fontFamily: theme.font.bold },
+  orRow: { flexDirection: "row", alignItems: "center", gap: 12, marginVertical: 20 },
+  orLine: { flex: 1, height: StyleSheet.hairlineWidth, backgroundColor: theme.line },
+  orText: { color: theme.muted, fontSize: 12.5 },
+  socialBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card2,
+    borderRadius: theme.radii.pill, padding: 15, marginBottom: 12 },
+  socialText: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14.5 },
+  otpInput: { textAlign: "center", letterSpacing: 10, fontSize: 22, marginTop: 20 },
   dobRow: { flexDirection: "row", gap: 10 },
   dobInput: { flex: 1, textAlign: "center" },
   hint: { color: theme.muted, fontSize: 12, marginTop: 8 },

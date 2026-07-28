@@ -50,6 +50,20 @@ This is what unlocks items 2 & 3 (real audio, ML verification), haptics, and pus
 - 🔲 **Embeddings backfill** — existing users (created before v17) have no
   `interest_embedding`; they self-heal on next bio save, or run a one-time backfill.
 
+## 🔑 Login providers (the new multi-option login screen is built)
+
+The login UI (phone-OTP · Google · Facebook · email) ships in `AuthScreen`. To make
+each provider actually work, enable it in Supabase → Auth → Providers:
+- ✅ **Google** — already working.
+- 🔲 **Email** — working (built-in; Supabase's default email is flaky → add custom SMTP).
+- 🔲 **Phone OTP** — needs an **SMS provider** (Twilio / MSG91) *plus* **India DLT**
+  registration for OTP templates. Enable "Phone" provider + paste credentials.
+  Until then the app shows "phone login isn't switched on yet — use Google."
+- 🔲 **Facebook** — create a **Facebook app** (developers.facebook.com), get through
+  Facebook Login **app review**, and paste the App ID + secret into the Facebook
+  provider. Add the Supabase callback URL to the FB app. Until then it shows a
+  friendly "not switched on yet" message.
+
 ---
 
 ## 🧊 Pre-launch polish / compliance (not blocking a beta, needed for public)
