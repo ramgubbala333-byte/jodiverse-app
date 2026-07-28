@@ -255,25 +255,33 @@ async function boot(){
   buildNav(); loadAll();
 }
 async function rpc(fn,args){const {data,error}=await db.rpc(fn,args||{}); if(error)throw error; return data;}
+async function tryRpc(fn,args){
+  try{ return await rpc(fn,args); }
+  catch(e){ console.warn("[admin]",fn,"→",e.message); return null; }
+}
 async function loadAll(){
   setMsg("dashMsg","Loading…");
-  try{
-    const [ov,ts,rep,reasons,highrisk,mq,vf,demo,lang,city,hour,rev] = await Promise.all([
-      rpc("admin_overview"), rpc("admin_timeseries",{days:14}), rpc("admin_recent_reports",{lim:30}),
-      rpc("admin_reports_by_reason"), rpc("admin_most_reported",{lim:10}), rpc("admin_match_quality"),
-      rpc("admin_verification"), rpc("admin_demographics"), rpc("admin_by_language",{lim:12}),
-      rpc("admin_by_city",{lim:12}), rpc("admin_calls_by_hour"), rpc("admin_revenue"),
-    ]);
-    Object.assign(D,{ov,ts,rep,reasons,highrisk,mq,vf,demo,lang,city,hour,rev});
-    try { D.churn = await rpc("admin_offboarding"); } catch { D.churn = null; } // needs offboarding-v21.sql
-    setMsg("dashMsg","");
-    $("asOf").textContent = "As of "+new Date(ov.generated_at).toLocaleString();
-    renderAll();
-  }catch(e){
-    if((e.message||"").includes("NOT_ADMIN"))
-      setMsg("dashMsg","Signed in, but not an admin. Run in the Supabase SQL editor: insert into admins (user_id) select id from auth.users where email='<your email>';","err");
-    else setMsg("dashMsg",e.message||String(e),"err");
+  // Each panel loads independently — one failing query never blanks the rest.
+  D.ov = await tryRpc("admin_overview");
+  if(!D.ov){
+    setMsg("dashMsg","Couldn't load stats. Confirm you're an admin (select * from admins;) — if empty, run the insert. Otherwise check the browser console (F12) for the failing query.","err");
+    return;
   }
+  D.ts       = await tryRpc("admin_timeseries",{days:14}) || [];
+  D.rep      = await tryRpc("admin_recent_reports",{lim:30}) || [];
+  D.reasons  = await tryRpc("admin_reports_by_reason") || [];
+  D.highrisk = await tryRpc("admin_most_reported",{lim:10}) || [];
+  D.mq       = await tryRpc("admin_match_quality") || {};
+  D.vf       = await tryRpc("admin_verification") || {};
+  D.demo     = await tryRpc("admin_demographics") || {};
+  D.lang     = await tryRpc("admin_by_language",{lim:12}) || [];
+  D.city     = await tryRpc("admin_by_city",{lim:12}) || [];
+  D.hour     = await tryRpc("admin_calls_by_hour") || [];
+  D.rev      = await tryRpc("admin_revenue") || {};
+  D.churn    = await tryRpc("admin_offboarding");
+  setMsg("dashMsg","");
+  $("asOf").textContent = "As of "+new Date(D.ov.generated_at).toLocaleString();
+  renderAll();
 }
 
 // ── render helpers ──────────────────────────────────────────
