@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Switch, Modal, TextInput, PanResponder } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, Switch, Modal, TextInput, PanResponder, Share, Pressable, Animated, Easing } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -161,6 +161,36 @@ function ToggleRow({ title, sub, value, onChange }: {
   );
 }
 
+// Where people say they met their person — competitor attribution on churn.
+const MET_OPTIONS = ["Right here on Dosti Connect", "Hinge", "Bumble", "Tinder",
+  "Shaadi.com", "Aisle", "Instagram / social", "Met offline / other"] as const;
+
+// Press-and-hold to confirm a destructive action — an accidental tap can't wipe
+// an account. Fills a bar over ~1.6s; releasing early cancels.
+function HoldButton({ label, onComplete, disabled }: {
+  label: string; onComplete: () => void; disabled?: boolean;
+}) {
+  const progress = useRef(new Animated.Value(0)).current;
+  const anim = useRef<Animated.CompositeAnimation | null>(null);
+  const start = () => {
+    if (disabled) return;
+    anim.current = Animated.timing(progress, { toValue: 1, duration: 1600,
+      easing: Easing.linear, useNativeDriver: false });
+    anim.current.start(({ finished }) => { if (finished) onComplete(); });
+  };
+  const cancel = () => {
+    anim.current?.stop();
+    Animated.timing(progress, { toValue: 0, duration: 160, useNativeDriver: false }).start();
+  };
+  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ["0%", "100%"] });
+  return (
+    <Pressable onPressIn={start} onPressOut={cancel} disabled={disabled} style={s.holdBtn}>
+      <Animated.View style={[s.holdFill, { width }]} />
+      <Text style={s.holdText}>{label}</Text>
+    </Pressable>
+  );
+}
+
 export default function SettingsScreen() {
   const [email, setEmail] = useState("");
   const [tier, setTier] = useState<string | null>(null);
@@ -172,6 +202,9 @@ export default function SettingsScreen() {
   const [paused, setPaused] = useState(false);
   const [showActive, setShowActive] = useState(true);
   const [verified, setVerified] = useState(false);
+  // "Before you go" deletion-deflection flow
+  const [delFlow, setDelFlow] = useState<null | "options" | "met" | "confirm">(null);
+  const [whereMet, setWhereMet] = useState<string | null>(null);
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
 
@@ -224,21 +257,42 @@ export default function SettingsScreen() {
 
   const stub = (title: string, body: string) => () => Alert.alert(title, body);
 
-  const deleteAccount = () => {
-    Alert.alert("Delete account?",
-      "This permanently removes your profile, photos, matches and messages. This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete forever", style: "destructive", onPress: async () => {
-        setDeleting(true);
-        const { data, error } = await supabase.functions.invoke("delete-account");
-        setDeleting(false);
-        if (error || !data?.ok) {
-          Alert.alert("Couldn't delete", error?.message ?? data?.reason ?? "Try again later.");
-        } else {
-          await supabase.auth.signOut();
-        }
-      }},
-    ]);
+  const shareApp = async () => {
+    try {
+      await Share.share({
+        message: "I'm on Dosti Connect — you talk first, then find your connection. Come find yours 💜",
+      });
+    } catch { /* user cancelled */ }
+  };
+
+  const getHelp = () => Alert.alert("Get help",
+    "Questions, a bug, or a safety concern? Email us at help@dosticonnect.app and we'll get back to you — usually within a day.",
+    [{ text: "OK" }]);
+
+  // Pause instead of leaving — the softest deflection.
+  const pauseInstead = () => {
+    setPaused(true); savePref({ paused: true });
+    supabase.rpc("log_offboard", { p_action: "paused" }).then(() => {}, () => {});
+    setDelFlow(null);
+    Alert.alert("Profile paused 🌙",
+      "You're now invisible to new people, but you can still chat with your matches. Turn it back on anytime.");
+  };
+
+  // The real deletion — logs why first (survives the account), then wipes it.
+  const runDelete = async (met: boolean, where: string | null) => {
+    setDelFlow(null); setDeleting(true);
+    try {
+      await supabase.rpc("log_offboard", {
+        p_action: met ? "met_someone" : "deleted", p_met: met, p_where: where,
+      });
+    } catch { /* logging is best-effort; never block deletion */ }
+    const { data, error } = await supabase.functions.invoke("delete-account");
+    setDeleting(false);
+    if (error || !data?.ok) {
+      Alert.alert("Couldn't delete", error?.message ?? data?.reason ?? "Try again later.");
+    } else {
+      await supabase.auth.signOut();
+    }
   };
 
   return (
@@ -319,6 +373,13 @@ export default function SettingsScreen() {
         <LinkRow title="Rate Dosti Connect" value="Win a Boost ⚡" onPress={() => setRateOpen(true)} />
       </Section>
 
+      <Section title="Share & support">
+        <LinkRow title="Share Dosti Connect"
+          sub="Help a friend talk their way to a real connection." onPress={shareApp} />
+        <LinkRow title="Get Help"
+          sub="Reach our team about anything — a bug, a question, a safety concern." onPress={getHelp} />
+      </Section>
+
       {/* centered account actions, Hinge-style */}
       <TouchableOpacity style={s.centerRow} onPress={() => supabase.auth.signOut()}>
         <Text style={s.centerText}>Log Out</Text>
@@ -326,7 +387,7 @@ export default function SettingsScreen() {
       {deleting ? (
         <View style={s.centerRow}><ActivityIndicator color={theme.danger} /></View>
       ) : (
-        <TouchableOpacity style={s.centerRow} onPress={deleteAccount}>
+        <TouchableOpacity style={s.centerRow} onPress={() => setDelFlow("options")}>
           <Text style={[s.centerText, { color: theme.danger }]}>Delete Account</Text>
         </TouchableOpacity>
       )}
@@ -365,6 +426,90 @@ export default function SettingsScreen() {
                 </LinearGradient>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* "Before you go" — deletion deflection flow */}
+      <Modal visible={delFlow !== null} transparent animationType="slide"
+        onRequestClose={() => setDelFlow(null)}>
+        <View style={s.sheetBg}>
+          <View style={s.sheet}>
+            {delFlow === "options" && (
+              <>
+                <Text style={s.sheetTitle}>Before you go…</Text>
+                <Text style={s.sheetSub}>A couple of options that keep your matches and history intact.</Text>
+
+                <TouchableOpacity style={s.optCard} onPress={pauseInstead}>
+                  <View style={s.optIcon}><Ionicons name="eye-off-outline" size={20} color={theme.gold} /></View>
+                  <View style={{ flex: 1 }}>
+                    <View style={s.optHead}>
+                      <Text style={s.optTitle}>Pause my profile</Text>
+                      <View style={s.recTag}><Text style={s.recTagText}>RECOMMENDED</Text></View>
+                    </View>
+                    <Text style={s.optSub}>Go invisible to new people, keep chatting with your matches. Reversible anytime.</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={s.optCard} onPress={() => { setWhereMet(null); setDelFlow("met"); }}>
+                  <View style={s.optIcon}><Ionicons name="heart" size={20} color={theme.gold} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.optTitle}>I've met someone 💜</Text>
+                    <Text style={s.optSub}>Congratulations! Wrap up your time with us the happy way.</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={s.optCard} onPress={() => setDelFlow("confirm")}>
+                  <View style={s.optIcon}><Ionicons name="trash-outline" size={20} color={theme.danger} /></View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[s.optTitle, { color: theme.danger }]}>Delete my account</Text>
+                    <Text style={s.optSub}>Permanently erase your profile, matches and messages.</Text>
+                  </View>
+                </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => setDelFlow(null)} style={s.sheetCancel}>
+                  <Text style={s.sheetCancelText}>Never mind</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {delFlow === "met" && (
+              <>
+                <Text style={s.sheetTitle}>That's wonderful! 🎉</Text>
+                <Text style={s.sheetSub}>Where did you two meet? It helps us build a better Dosti Connect.</Text>
+                <ScrollView style={{ maxHeight: 300 }}>
+                  {MET_OPTIONS.map((o) => (
+                    <TouchableOpacity key={o} style={s.metRow} onPress={() => setWhereMet(o)}>
+                      <Ionicons name={whereMet === o ? "checkmark-circle" : "ellipse-outline"}
+                        size={22} color={whereMet === o ? theme.gold : theme.muted} />
+                      <Text style={s.metText}>{o}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+                <TouchableOpacity disabled={!whereMet} onPress={() => runDelete(true, whereMet)}
+                  style={{ opacity: whereMet ? 1 : 0.4, marginTop: 14 }}>
+                  <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.modalSend}>
+                    <Text style={{ color: "#fff", fontFamily: theme.font.black }}>All the best — close my account</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={pauseInstead} style={s.sheetCancel}>
+                  <Text style={s.sheetCancelText}>Actually, just pause it instead</Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {delFlow === "confirm" && (
+              <>
+                <Text style={s.sheetTitle}>Delete forever?</Text>
+                <Text style={s.sheetSub}>This permanently removes your profile, photos, matches and messages — it can't be undone. Press and hold to confirm.</Text>
+                <View style={{ marginTop: 18 }}>
+                  <HoldButton label="Hold to delete account" onComplete={() => runDelete(false, null)} />
+                </View>
+                <TouchableOpacity onPress={() => setDelFlow(null)} style={s.sheetCancel}>
+                  <Text style={s.sheetCancelText}>Keep my account</Text>
+                </TouchableOpacity>
+              </>
+            )}
           </View>
         </View>
       </Modal>
@@ -414,4 +559,29 @@ const s = StyleSheet.create({
   modalRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14 },
   modalGhost: { paddingHorizontal: 14, paddingVertical: 12 },
   modalSend: { borderRadius: 999, padding: 14, alignItems: "center", ...theme.shadow.cta },
+
+  // deletion-deflection bottom sheet
+  sheetBg: { flex: 1, backgroundColor: "rgba(0,0,0,.6)", justifyContent: "flex-end" },
+  sheet: { backgroundColor: theme.card, borderTopLeftRadius: 26, borderTopRightRadius: 26,
+    padding: 22, paddingBottom: 34, borderTopWidth: 1, borderColor: theme.line },
+  sheetTitle: { color: theme.ink, fontSize: 22, fontFamily: theme.font.display, letterSpacing: -0.5 },
+  sheetSub: { color: theme.muted, fontSize: 13.5, marginTop: 8, marginBottom: 16, lineHeight: 19 },
+  optCard: { flexDirection: "row", gap: 12, alignItems: "flex-start", backgroundColor: theme.card2,
+    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.lg, padding: 15, marginBottom: 10 },
+  optIcon: { width: 38, height: 38, borderRadius: 19, backgroundColor: theme.bg,
+    alignItems: "center", justifyContent: "center" },
+  optHead: { flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" },
+  optTitle: { color: theme.ink, fontSize: 15.5, fontFamily: theme.font.bold },
+  optSub: { color: theme.muted, fontSize: 12.5, marginTop: 3, lineHeight: 17 },
+  recTag: { backgroundColor: theme.goldSoft, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 2 },
+  recTagText: { color: theme.gold, fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  sheetCancel: { alignItems: "center", paddingVertical: 14, marginTop: 4 },
+  sheetCancelText: { color: theme.muted, fontFamily: theme.font.bold, fontSize: 14 },
+  metRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.line },
+  metText: { color: theme.ink, fontSize: 15, fontFamily: theme.font.medium },
+  holdBtn: { height: 52, borderRadius: 999, backgroundColor: theme.card2, borderWidth: 1.5,
+    borderColor: theme.danger, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  holdFill: { position: "absolute", left: 0, top: 0, bottom: 0, backgroundColor: theme.danger, opacity: 0.9 },
+  holdText: { color: theme.ink, fontFamily: theme.font.black, fontSize: 15 },
 });
