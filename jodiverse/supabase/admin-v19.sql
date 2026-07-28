@@ -54,8 +54,9 @@ begin
     'subs_active',       (select count(*) from subscriptions where expires_at > now()),
     'coins_total',       (select coalesce(sum(balance), 0) from coin_wallet),
     'gifts_sent',        (select count(*) from gifts_sent),
-    -- community
-    'lounges_total',     (select count(*) from lounges),
+    -- community (guarded — lounges table only exists after v15)
+    'lounges_total',     (case when to_regclass('public.lounges') is not null
+                            then (select count(*) from lounges) else 0 end),
     'generated_at',      now()
   ) into r;
   return r;
