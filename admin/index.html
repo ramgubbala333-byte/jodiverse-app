@@ -81,7 +81,9 @@
 <!-- LOGIN -->
 <div id="login">
   <h1><span class="brand">Admin Console</span></h1>
-  <p>Sign in with your admin email. We'll email you a 6-digit code — no password needed.</p>
+  <p>Sign in with the same account you use for the app.</p>
+  <button class="btn" id="googleBtn" style="margin-bottom:14px">Continue with Google</button>
+  <div style="text-align:center;color:var(--muted);font-size:12px;margin:2px 0 14px">or use an email code</div>
   <div id="step-email">
     <input id="email" type="email" placeholder="you@email.com" autocomplete="email" />
     <button class="btn" id="sendBtn">Send code</button>
@@ -224,6 +226,13 @@ $("verifyBtn").onclick = async ()=>{
   boot();
 };
 $("backBtn").onclick=()=>{$("step-code").classList.add("hidden");$("step-email").classList.remove("hidden");setMsg("loginMsg","");};
+$("googleBtn").onclick=async()=>{
+  setMsg("loginMsg","Opening Google…");
+  const {error}=await db.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin}});
+  if(error)setMsg("loginMsg",error.message,"err");
+};
+// After the Google redirect returns, the session lands here → open the dashboard.
+db.auth.onAuthStateChange((_e,session)=>{ if(session && $("app").classList.contains("hidden")) boot(); });
 $("refreshBtn").onclick=loadAll;
 $("signoutBtn").onclick=async()=>{await db.auth.signOut();location.reload();};
 
