@@ -46,7 +46,15 @@ const Stack = createNativeStackNavigator();
 // Retype the WHOLE app to the branded body face in one shot. Every screen's
 // <Text>/<TextInput> inherits Plus Jakarta Sans (medium) as its base; hero
 // screens then override key text with the display/heavy faces via theme.font.
+//
+// MUST run exactly once: this is called from render, and it WRAPS
+// defaultProps.style — without the guard, every re-render would nest the style
+// array one level deeper, and the ever-growing nesting eventually stack-overflows
+// React Native's style flattening (crash on a re-render-heavy moment like OAuth).
+let fontDefaultsApplied = false;
 function applyGlobalFont() {
+  if (fontDefaultsApplied) return;
+  fontDefaultsApplied = true;
   const T = Text as any, TI = TextInput as any;
   T.defaultProps = T.defaultProps || {};
   T.defaultProps.style = [{ fontFamily: theme.font.medium, color: theme.ink }, T.defaultProps.style];

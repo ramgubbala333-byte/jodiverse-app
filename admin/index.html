@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Admin · Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#0B0D14; --card:#12151E; --card2:#1A1E2A; --ink:#E9E7E2; --muted:#8B90A3;
+    --line:#232838; --gold:#FF3D8A; --violet:#8A3FFC; --orange:#FF8A3D; --teal:#2EE6D6;
+    --danger:#F1453A; --radius:18px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;
+       -webkit-font-smoothing:antialiased}
+  a{color:var(--gold)}
+  .wrap{max-width:1180px;margin:0 auto;padding:24px}
+  .brand{font-family:"Unbounded",sans-serif;font-weight:800;letter-spacing:-.5px;
+    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+
+  /* login */
+  #login{max-width:420px;margin:14vh auto;padding:28px;background:var(--card);
+    border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  #login h1{font-size:24px;margin:0 0 4px}
+  #login p{color:var(--muted);font-size:13.5px;margin:0 0 20px;line-height:1.5}
+  input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
+    padding:13px 14px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:12px}
+  input:focus{outline:none;border-color:var(--gold)}
+  button{font-family:inherit;cursor:pointer;border:none}
+  .btn{width:100%;padding:14px;border-radius:999px;font-weight:800;font-size:15px;color:#fff;
+    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet))}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+  .msg{font-size:13px;margin-top:12px;line-height:1.5}
+  .msg.err{color:#ff8a8a}
+  .msg.ok{color:var(--teal)}
+  .hidden{display:none}
+
+  /* header */
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px}
+  header h1{font-size:22px;margin:0}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  .row{display:flex;gap:8px;align-items:center}
+  .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;
+    padding:8px 14px;font-size:13px;font-weight:700;color:var(--ink)}
+
+  /* sections + cards */
+  h2.sec{font-family:"Unbounded",sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;
+    text-transform:uppercase;color:var(--muted);margin:28px 0 12px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;
+    position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
+    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));opacity:.7}
+  .kpi .label{color:var(--muted);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:30px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .sub{color:var(--muted);font-size:11.5px;margin-top:3px}
+
+  /* chart + table */
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:12px}
+  .panel h3{margin:0 0 12px;font-size:15px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
+  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
+  .pill.open{background:rgba(241,69,58,.16);color:#ff8a8a}
+  .pill.done{background:rgba(46,230,214,.14);color:var(--teal)}
+  .mini{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--card2);
+    border:1px solid var(--line);color:var(--ink)}
+  .empty{color:var(--muted);text-align:center;padding:26px;font-size:13.5px}
+</style>
+</head>
+<body>
+
+<!-- ── LOGIN ─────────────────────────────────────────────── -->
+<div id="login">
+  <h1><span class="brand">Admin Console</span></h1>
+  <p>Sign in with your admin email. We'll email you a 6-digit code — no password needed.</p>
+  <div id="step-email">
+    <input id="email" type="email" placeholder="you@email.com" autocomplete="email" />
+    <button class="btn" id="sendBtn">Send code</button>
+  </div>
+  <div id="step-code" class="hidden">
+    <input id="code" inputmode="numeric" placeholder="6-digit code" autocomplete="one-time-code" />
+    <button class="btn" id="verifyBtn">Verify &amp; enter</button>
+    <button class="btn ghost" id="backBtn" style="margin-top:8px">Use a different email</button>
+  </div>
+  <div id="loginMsg" class="msg"></div>
+</div>
+
+<!-- ── DASHBOARD ─────────────────────────────────────────── -->
+<div id="app" class="wrap hidden">
+  <header>
+    <div>
+      <h1><span class="brand">Admin Console</span></h1>
+      <div class="sub" id="asOf">—</div>
+    </div>
+    <div class="row">
+      <button class="chip" id="refreshBtn">↻ Refresh</button>
+      <button class="chip" id="signoutBtn">Sign out</button>
+    </div>
+  </header>
+
+  <div id="dashMsg" class="msg"></div>
+
+  <h2 class="sec">Users</h2>
+  <div class="grid" id="grid-users"></div>
+
+  <h2 class="sec">Activity (voice)</h2>
+  <div class="grid" id="grid-activity"></div>
+
+  <h2 class="sec">Connections</h2>
+  <div class="grid" id="grid-connections"></div>
+
+  <h2 class="sec">Money</h2>
+  <div class="grid" id="grid-money"></div>
+
+  <h2 class="sec">Growth · last 14 days</h2>
+  <div class="panel"><canvas id="chart" height="90"></canvas></div>
+
+  <h2 class="sec">Trust &amp; safety · reports</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>When</th><th>Status</th><th></th></tr></thead>
+      <tbody id="reportsBody"></tbody>
+    </table>
+    <div id="reportsEmpty" class="empty hidden">No reports. 🎉</div>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin:26px 0 40px">
+    Live data from your Supabase project · admin-only · numbers are real (small pre-launch — that's the point).
+  </p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script>
+// ─────────────────────────────────────────────────────────────
+// CONFIG — fill in your anon key (Supabase → Settings → API → anon/public).
+// The anon key is safe to embed; it's public and RLS-protected. Never put the
+// SERVICE ROLE key here.
+const SUPABASE_URL = "https://yqkvgbbordwurtgnyyxi.supabase.co";
+const ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
+// ─────────────────────────────────────────────────────────────
+
+const db = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
+const $ = (id) => document.getElementById(id);
+const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
+let chart;
+
+// ── auth ──────────────────────────────────────────────────
+async function sendCode() {
+  const email = $("email").value.trim();
+  if (!email) return;
+  $("sendBtn").disabled = true; setMsg("loginMsg", "Sending…");
+  const { error } = await db.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  $("sendBtn").disabled = false;
+  if (error) return setMsg("loginMsg", error.message, "err");
+  $("step-email").classList.add("hidden"); $("step-code").classList.remove("hidden");
+  setMsg("loginMsg", "Code sent — check your email.", "ok");
+}
+async function verifyCode() {
+  const email = $("email").value.trim(), token = $("code").value.trim();
+  if (!token) return;
+  $("verifyBtn").disabled = true; setMsg("loginMsg", "Verifying…");
+  const { error } = await db.auth.verifyOtp({ email, token, type: "email" });
+  $("verifyBtn").disabled = false;
+  if (error) return setMsg("loginMsg", error.message, "err");
+  boot();
+}
+function setMsg(id, text, kind) { const el = $(id); el.textContent = text || ""; el.className = "msg " + (kind || ""); }
+
+$("sendBtn").onclick = sendCode;
+$("verifyBtn").onclick = verifyCode;
+$("backBtn").onclick = () => { $("step-code").classList.add("hidden"); $("step-email").classList.remove("hidden"); setMsg("loginMsg",""); };
+$("refreshBtn").onclick = loadAll;
+$("signoutBtn").onclick = async () => { await db.auth.signOut(); location.reload(); };
+
+// ── dashboard ─────────────────────────────────────────────
+async function boot() {
+  const { data } = await db.auth.getSession();
+  if (!data.session) return; // still on login
+  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+  loadAll();
+}
+
+async function loadAll() {
+  setMsg("dashMsg","Loading…");
+  const [ov, ts, rep] = await Promise.all([
+    db.rpc("admin_overview"),
+    db.rpc("admin_timeseries", { days: 14 }),
+    db.rpc("admin_recent_reports", { lim: 30 }),
+  ]);
+  if (ov.error) {
+    if ((ov.error.message || "").includes("NOT_ADMIN")) {
+      setMsg("dashMsg",
+        "You're signed in, but not an admin yet. Run this once in the Supabase SQL editor: " +
+        "insert into admins (user_id) select id from auth.users where email = '<your email>';", "err");
+    } else setMsg("dashMsg", ov.error.message, "err");
+    return;
+  }
+  setMsg("dashMsg","");
+  renderKPIs(ov.data);
+  renderChart(ts.data || []);
+  renderReports(rep.data || []);
+}
+
+function card(label, val, sub) {
+  return `<div class="kpi"><div class="label">${label}</div><div class="val">${val}</div>` +
+         (sub ? `<div class="sub">${sub}</div>` : "") + `</div>`;
+}
+function renderKPIs(d) {
+  $("asOf").textContent = "As of " + new Date(d.generated_at).toLocaleString();
+  $("grid-users").innerHTML =
+    card("Total users", fmt(d.users_total)) +
+    card("New today", fmt(d.users_new_today)) +
+    card("New (7d)", fmt(d.users_new_7d)) +
+    card("Verified", fmt(d.users_verified), d.users_total ? Math.round(100*d.users_verified/d.users_total)+"% of users" : "") +
+    card("With embedding", fmt(d.users_embedded), "semantic match ready");
+  $("grid-activity").innerHTML =
+    card("Calls (all-time)", fmt(d.calls_total)) +
+    card("Calls today", fmt(d.calls_today)) +
+    card("Calls (7d)", fmt(d.calls_7d)) +
+    card("Avg call", d.calls_avg_min != null ? d.calls_avg_min + " min" : "—") +
+    card("Active callers (7d)", fmt(d.active_callers_7d));
+  $("grid-connections").innerHTML =
+    card("Matches", fmt(d.matches_total)) +
+    card("Matches (7d)", fmt(d.matches_7d)) +
+    card("Messages", fmt(d.messages_total)) +
+    card("Messages today", fmt(d.messages_today)) +
+    card("Lounges", fmt(d.lounges_total));
+  $("grid-money").innerHTML =
+    card("Active subscribers", fmt(d.subs_active)) +
+    card("Coins in circulation", fmt(d.coins_total)) +
+    card("Gifts sent", fmt(d.gifts_sent)) +
+    card("Open reports", fmt(d.reports_open), fmt(d.reports_total) + " all-time");
+}
+
+function renderChart(rows) {
+  const labels = rows.map(r => r.day.slice(5)); // MM-DD
+  const mk = (key) => rows.map(r => r[key]);
+  const ctx = $("chart").getContext("2d");
+  if (chart) chart.destroy();
+  const line = (label, data, color) => ({ label, data, borderColor: color, backgroundColor: color+"22",
+    tension:.35, borderWidth:2, pointRadius:2, fill:true });
+  chart = new Chart(ctx, {
+    type: "line",
+    data: { labels, datasets: [
+      line("Signups", mk("signups"), "#FF8A3D"),
+      line("Calls",   mk("calls"),   "#FF3D8A"),
+      line("Matches", mk("matches"), "#8A3FFC"),
+    ]},
+    options: { responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ labels:{ color:"#8B90A3", boxWidth:12 } } },
+      scales:{ x:{ grid:{color:"#232838"}, ticks:{color:"#8B90A3"} },
+               y:{ grid:{color:"#232838"}, ticks:{color:"#8B90A3"}, beginAtZero:true } } }
+  });
+}
+
+function renderReports(rows) {
+  const body = $("reportsBody"), empty = $("reportsEmpty");
+  body.innerHTML = "";
+  empty.classList.toggle("hidden", rows.length > 0);
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td>${r.reporter_name ?? "—"}</td>` +
+      `<td>${r.reported_name ?? "—"}</td>` +
+      `<td>${r.reason ?? ""}${r.detail ? `<div style="color:var(--muted);font-size:11px">${r.detail}</div>` : ""}</td>` +
+      `<td>${new Date(r.created_at).toLocaleDateString()}</td>` +
+      `<td>${r.resolved ? '<span class="pill done">resolved</span>' : '<span class="pill open">open</span>'}</td>` +
+      `<td></td>`;
+    if (!r.resolved) {
+      const btn = document.createElement("button");
+      btn.className = "mini"; btn.textContent = "Resolve";
+      btn.onclick = async () => { btn.disabled = true; await db.rpc("admin_resolve_report", { rid: r.id }); loadAll(); };
+      tr.lastElementChild.appendChild(btn);
+    }
+    body.appendChild(tr);
+  }
+}
+
+// start: if already signed in, jump straight to the dashboard
+boot();
+</script>
+</body>
+</html>
