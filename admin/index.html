@@ -168,6 +168,12 @@
       <div class="note">🛈 Payments aren't live yet (dev stubs), so these reflect test data. <b>Billing-fraud ML / chargeback detection</b> from the reference design is <b>roadmap — not built.</b></div>
     </section>
 
+    <section class="page" data-page="churn">
+      <div class="grid" id="churn-kpis"></div>
+      <div class="panel"><h3>Where they met their person</h3><canvas id="c-where" height="150"></canvas></div>
+      <div class="note">🛈 Captured by the app's "Before you go" flow — why people leave, and (when they've met someone) which app they met on. Needs <code>offboarding-v21.sql</code> run.</div>
+    </section>
+
     <p style="color:var(--muted);font-size:12px;margin:26px 0 40px">Live, admin-only data from your Supabase. Real numbers — small pre-launch, and honest about it.</p>
   </main>
 </div>
@@ -187,7 +193,8 @@ const D = {}; // fetched data cache
 
 const NAV = [
   ["overview","Overview"], ["moderation","Moderation"], ["match","Match Quality"],
-  ["verify","Verification & Risk"], ["audience","Audience"], ["behavior","User Behavior"], ["revenue","Revenue"],
+  ["verify","Verification & Risk"], ["audience","Audience"], ["behavior","User Behavior"],
+  ["revenue","Revenue"], ["churn","Churn"],
 ];
 const SYS = [
   ["Selfie verification","ok","Active"], ["Reports & blocks","ok","Active"],
@@ -249,6 +256,7 @@ async function loadAll(){
       rpc("admin_by_city",{lim:12}), rpc("admin_calls_by_hour"), rpc("admin_revenue"),
     ]);
     Object.assign(D,{ov,ts,rep,reasons,highrisk,mq,vf,demo,lang,city,hour,rev});
+    try { D.churn = await rpc("admin_offboarding"); } catch { D.churn = null; } // needs offboarding-v21.sql
     setMsg("dashMsg","");
     $("asOf").textContent = "As of "+new Date(ov.generated_at).toLocaleString();
     renderAll();
@@ -326,6 +334,16 @@ function renderAll(){
   $("rev-kpis").innerHTML =
     card("Active subs",fmt(r.subs_active),tierStr) + card("Coins in circulation",fmt(r.coins_total)) +
     card("Gifts sent",fmt(r.gifts_sent)) + card("Coins spent on gifts",fmt(r.gifts_coins_spent));
+
+  // Churn
+  const ch=D.churn;
+  if(!ch){ $("churn-kpis").innerHTML = card("Churn logging","—","run offboarding-v21.sql to enable"); }
+  else {
+    $("churn-kpis").innerHTML =
+      card("Accounts deleted",fmt(ch.deleted_total)) + card("Met someone 💜",fmt(ch.met_someone)) +
+      card("Paused instead",fmt(ch.paused));
+    const w=ch.where_met||{}; bar("c-where", Object.keys(w), Object.values(w), true);
+  }
 }
 function growth(id){
   const rows=D.ts||[]; const line=(l,k,c)=>({label:l,data:rows.map(r=>r[k]),borderColor:c,backgroundColor:c+"22",tension:.35,borderWidth:2,pointRadius:2,fill:true});
