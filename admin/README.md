@@ -9,10 +9,11 @@ subscriptions, coins) through admin-only, RLS-protected functions.
 
 ## One-time setup
 
-1. **Run the SQL** — in the Supabase SQL editor, run
-   [`../jodiverse/supabase/admin-v19.sql`](../jodiverse/supabase/admin-v19.sql)
-   (needs the earlier migrations). It creates the admin allowlist + read-only
-   analytics functions.
+1. **Run the SQL** — in the Supabase SQL editor, run **both**
+   [`../jodiverse/supabase/admin-v19.sql`](../jodiverse/supabase/admin-v19.sql) **then**
+   [`../jodiverse/supabase/admin-analytics-v20.sql`](../jodiverse/supabase/admin-analytics-v20.sql)
+   (need the earlier migrations). They create the admin allowlist + all the
+   read-only analytics functions.
 
 2. **Make yourself an admin** — run once (use the email you sign in to the app with):
    ```sql
@@ -39,14 +40,23 @@ Sign in with your admin email → you'll get a **6-digit code** by email → ent
 > Templates → *Magic Link*, make sure the template includes `{{ .Token }}` (that's
 > the 6-digit code). Then request a new code.
 
-## What it shows
+## What it shows (sidebar sections)
 
-- **Users** — total, new today / 7d, verified %, embedded (semantic-match ready)
-- **Activity** — calls all-time / today / 7d, avg call length, active callers
-- **Connections** — matches, messages, lounges
-- **Money** — active subscribers, coins in circulation, gifts, open reports
-- **Growth chart** — signups / calls / matches over 14 days
-- **Trust & safety** — the reports queue, with one-click *Resolve*
+Mirrors the requested dashboard design — every panel is present, on **real data**;
+fictional "AI systems" from the mockup are honestly labelled **Roadmap** (see the
+sidebar's *System status*), never faked.
 
-Everything is gated by the `is_admin()` check — a normal app user calling these
-functions gets `NOT_ADMIN`.
+- **Overview** — headline KPIs + a 14-day growth chart
+- **Moderation** — top report reasons, most-reported users, the reports queue
+  (one-click *Resolve*). *(AI/NLP content moderation = roadmap.)*
+- **Match Quality** — matches, match-rate per call, avg post-call rating,
+  "talk again" %, completion % (real feedback, not a fabricated score)
+- **Verification & Risk** — verified/unverified, active/inactive, reported users,
+  blocks. *(ML fake-profile detection = roadmap.)*
+- **Audience** — gender, age, language & city breakdowns (our honest "localization")
+- **User Behavior** — calls by hour-of-day, plus the growth trend
+- **Revenue** — active subs by tier, coins in circulation, gifts. *(Payments are
+  dev stubs; billing-fraud ML = roadmap.)*
+
+Everything is gated by `is_admin()` — a normal app user calling these functions
+gets `NOT_ADMIN`.

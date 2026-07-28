@@ -10,73 +10,75 @@
   :root{
     --bg:#0B0D14; --card:#12151E; --card2:#1A1E2A; --ink:#E9E7E2; --muted:#8B90A3;
     --line:#232838; --gold:#FF3D8A; --violet:#8A3FFC; --orange:#FF8A3D; --teal:#2EE6D6;
-    --danger:#F1453A; --radius:18px;
+    --danger:#F1453A; --amber:#FFB020; --radius:18px;
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;
-       -webkit-font-smoothing:antialiased}
-  a{color:var(--gold)}
-  .wrap{max-width:1180px;margin:0 auto;padding:24px}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   .brand{font-family:"Unbounded",sans-serif;font-weight:800;letter-spacing:-.5px;
-    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));
-    -webkit-background-clip:text;background-clip:text;color:transparent}
+    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
+  button{font-family:inherit;cursor:pointer;border:none}
+  input{font-family:inherit}
+  .hidden{display:none !important}
 
   /* login */
-  #login{max-width:420px;margin:14vh auto;padding:28px;background:var(--card);
-    border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
+  #login{max-width:420px;margin:14vh auto;padding:28px;background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
   #login h1{font-size:24px;margin:0 0 4px}
   #login p{color:var(--muted);font-size:13.5px;margin:0 0 20px;line-height:1.5}
-  input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;
-    padding:13px 14px;color:var(--ink);font-size:15px;font-family:inherit;margin-bottom:12px}
-  input:focus{outline:none;border-color:var(--gold)}
-  button{font-family:inherit;cursor:pointer;border:none}
-  .btn{width:100%;padding:14px;border-radius:999px;font-weight:800;font-size:15px;color:#fff;
-    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet))}
+  #login input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--ink);font-size:15px;margin-bottom:12px}
+  #login input:focus{outline:none;border-color:var(--gold)}
+  .btn{width:100%;padding:14px;border-radius:999px;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet))}
   .btn:disabled{opacity:.5;cursor:default}
   .btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
   .msg{font-size:13px;margin-top:12px;line-height:1.5}
-  .msg.err{color:#ff8a8a}
-  .msg.ok{color:var(--teal)}
-  .hidden{display:none}
+  .msg.err{color:#ff8a8a}.msg.ok{color:var(--teal)}
 
-  /* header */
-  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
-    padding-bottom:18px;border-bottom:1px solid var(--line);margin-bottom:22px}
-  header h1{font-size:22px;margin:0}
-  header .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+  /* shell */
+  #app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+  aside{background:#0e1119;border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+  aside .logo{font-family:"Unbounded";font-weight:800;font-size:17px;padding:6px 8px 18px}
+  nav a{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px}
+  nav a:hover{background:var(--card2);color:var(--ink)}
+  nav a.on{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+  nav a .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:auto}
+  .status{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
+  .status h4{color:var(--muted);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;margin:0 0 10px;padding:0 8px}
+  .srow{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;font-size:12px}
+  .srow .st{font-size:10.5px;font-weight:700}
+  .st.ok{color:var(--teal)}.st.dev{color:var(--amber)}.st.road{color:var(--muted)}
+
+  main{padding:24px 28px;max-width:1100px}
+  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px}
+  header h1{font-size:24px;margin:0;font-family:"Unbounded";letter-spacing:-.5px}
+  header .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
   .row{display:flex;gap:8px;align-items:center}
-  .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;
-    padding:8px 14px;font-size:13px;font-weight:700;color:var(--ink)}
+  .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--ink)}
 
-  /* sections + cards */
-  h2.sec{font-family:"Unbounded",sans-serif;font-size:14px;font-weight:700;letter-spacing:.5px;
-    text-transform:uppercase;color:var(--muted);margin:28px 0 12px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;
-    position:relative;overflow:hidden}
-  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;
-    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));opacity:.7}
-  .kpi .label{color:var(--muted);font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-  .kpi .val{font-size:30px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
-  .kpi .sub{color:var(--muted);font-size:11.5px;margin-top:3px}
-
-  /* chart + table */
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:12px}
-  .panel h3{margin:0 0 12px;font-size:15px}
+  section.page{display:none;margin-top:18px}
+  section.page.on{display:block}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));opacity:.7}
+  .kpi .label{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
+  .kpi .val{font-size:28px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
+  .kpi .sub{color:var(--muted);font-size:11px;margin-top:3px}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:14px}
+  .panel h3{margin:0 0 14px;font-size:15px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:820px){.two{grid-template-columns:1fr}#app{grid-template-columns:1fr}aside{position:static;height:auto}}
   table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
   th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
   .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
-  .pill.open{background:rgba(241,69,58,.16);color:#ff8a8a}
-  .pill.done{background:rgba(46,230,214,.14);color:var(--teal)}
-  .mini{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--card2);
-    border:1px solid var(--line);color:var(--ink)}
-  .empty{color:var(--muted);text-align:center;padding:26px;font-size:13.5px}
+  .pill.open{background:rgba(241,69,58,.16);color:#ff8a8a}.pill.done{background:rgba(46,230,214,.14);color:var(--teal)}
+  .mini{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--card2);border:1px solid var(--line);color:var(--ink)}
+  .empty{color:var(--muted);text-align:center;padding:24px;font-size:13.5px}
+  .note{background:rgba(255,176,32,.09);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:12px 14px;font-size:12.5px;color:#f4d29a;line-height:1.5;margin-top:12px}
+  canvas{max-height:280px}
 </style>
 </head>
 <body>
 
-<!-- ── LOGIN ─────────────────────────────────────────────── -->
+<!-- LOGIN -->
 <div id="login">
   <h1><span class="brand">Admin Console</span></h1>
   <p>Sign in with your admin email. We'll email you a 6-digit code — no password needed.</p>
@@ -92,199 +94,255 @@
   <div id="loginMsg" class="msg"></div>
 </div>
 
-<!-- ── DASHBOARD ─────────────────────────────────────────── -->
-<div id="app" class="wrap hidden">
-  <header>
-    <div>
-      <h1><span class="brand">Admin Console</span></h1>
-      <div class="sub" id="asOf">—</div>
+<!-- APP -->
+<div id="app" class="hidden">
+  <aside>
+    <div class="logo"><span class="brand">Admin</span></div>
+    <nav id="nav"></nav>
+    <div class="status">
+      <h4>System status</h4>
+      <div id="sysStatus"></div>
     </div>
-    <div class="row">
-      <button class="chip" id="refreshBtn">↻ Refresh</button>
-      <button class="chip" id="signoutBtn">Sign out</button>
-    </div>
-  </header>
+  </aside>
+  <main>
+    <header>
+      <div>
+        <h1 id="pageTitle">Overview</h1>
+        <div class="sub" id="asOf">—</div>
+      </div>
+      <div class="row">
+        <button class="chip" id="refreshBtn">↻ Refresh</button>
+        <button class="chip" id="signoutBtn">Sign out</button>
+      </div>
+    </header>
+    <div id="dashMsg" class="msg"></div>
 
-  <div id="dashMsg" class="msg"></div>
+    <!-- sections injected/toggled here -->
+    <section class="page on" data-page="overview">
+      <div class="grid" id="ov-users"></div>
+      <div class="panel"><h3>Growth · last 14 days</h3><canvas id="c-growth" height="90"></canvas></div>
+    </section>
 
-  <h2 class="sec">Users</h2>
-  <div class="grid" id="grid-users"></div>
+    <section class="page" data-page="moderation">
+      <div class="grid" id="mod-kpis"></div>
+      <div class="two">
+        <div class="panel"><h3>Top report reasons</h3><canvas id="c-reasons" height="120"></canvas></div>
+        <div class="panel"><h3>Most-reported users</h3><table><thead><tr><th>User</th><th>Verified</th><th>Reports</th></tr></thead><tbody id="highrisk"></tbody></table><div id="highriskEmpty" class="empty hidden">No reported users.</div></div>
+      </div>
+      <div class="panel"><h3>Reports queue</h3>
+        <table><thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>When</th><th>Status</th><th></th></tr></thead><tbody id="reportsBody"></tbody></table>
+        <div id="reportsEmpty" class="empty hidden">No reports. 🎉</div>
+      </div>
+      <div class="note">🛈 <b>AI content moderation (NLP / image / audio scanning)</b> from the reference design is <b>roadmap — not built.</b> This panel shows your real, user-filed reports &amp; blocks.</div>
+    </section>
 
-  <h2 class="sec">Activity (voice)</h2>
-  <div class="grid" id="grid-activity"></div>
+    <section class="page" data-page="match">
+      <div class="grid" id="match-kpis"></div>
+      <div class="note">🛈 Quality here is measured from <b>real post-call feedback</b> (stars, "talk again", completion) — not a fabricated compatibility score.</div>
+    </section>
 
-  <h2 class="sec">Connections</h2>
-  <div class="grid" id="grid-connections"></div>
+    <section class="page" data-page="verify">
+      <div class="grid" id="verify-kpis"></div>
+      <div class="note">🛈 Your real trust layer is <b>selfie verification + reports + blocks</b>. <b>ML fake-profile / catfish detection</b> from the reference design is <b>roadmap — not built.</b></div>
+    </section>
 
-  <h2 class="sec">Money</h2>
-  <div class="grid" id="grid-money"></div>
+    <section class="page" data-page="audience">
+      <div class="two">
+        <div class="panel"><h3>Gender</h3><canvas id="c-gender" height="150"></canvas></div>
+        <div class="panel"><h3>Age</h3><canvas id="c-age" height="150"></canvas></div>
+      </div>
+      <div class="two">
+        <div class="panel"><h3>Languages</h3><canvas id="c-lang" height="150"></canvas></div>
+        <div class="panel"><h3>Cities</h3><canvas id="c-city" height="150"></canvas></div>
+      </div>
+      <div class="note">🛈 This is our honest version of "Localization" — real language &amp; city breakdowns from profiles. The reference design's "24 regions / 892 moderators / 18-language AI" is fiction.</div>
+    </section>
 
-  <h2 class="sec">Growth · last 14 days</h2>
-  <div class="panel"><canvas id="chart" height="90"></canvas></div>
+    <section class="page" data-page="behavior">
+      <div class="panel"><h3>Calls by hour of day (all-time)</h3><canvas id="c-hour" height="90"></canvas></div>
+      <div class="panel"><h3>Signups · Calls · Matches (14 days)</h3><canvas id="c-growth2" height="90"></canvas></div>
+    </section>
 
-  <h2 class="sec">Trust &amp; safety · reports</h2>
-  <div class="panel">
-    <table>
-      <thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>When</th><th>Status</th><th></th></tr></thead>
-      <tbody id="reportsBody"></tbody>
-    </table>
-    <div id="reportsEmpty" class="empty hidden">No reports. 🎉</div>
-  </div>
+    <section class="page" data-page="revenue">
+      <div class="grid" id="rev-kpis"></div>
+      <div class="note">🛈 Payments aren't live yet (dev stubs), so these reflect test data. <b>Billing-fraud ML / chargeback detection</b> from the reference design is <b>roadmap — not built.</b></div>
+    </section>
 
-  <p style="color:var(--muted);font-size:12px;margin:26px 0 40px">
-    Live data from your Supabase project · admin-only · numbers are real (small pre-launch — that's the point).
-  </p>
+    <p style="color:var(--muted);font-size:12px;margin:26px 0 40px">Live, admin-only data from your Supabase. Real numbers — small pre-launch, and honest about it.</p>
+  </main>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-// ─────────────────────────────────────────────────────────────
-// CONFIG — fill in your anon key (Supabase → Settings → API → anon/public).
-// The anon key is safe to embed; it's public and RLS-protected. Never put the
-// SERVICE ROLE key here.
+// ── CONFIG ──────────────────────────────────────────────────
 const SUPABASE_URL = "https://yqkvgbbordwurtgnyyxi.supabase.co";
-const ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
-// ─────────────────────────────────────────────────────────────
-
+const ANON_KEY = "PASTE_YOUR_SUPABASE_ANON_KEY_HERE"; // Supabase → Settings → API (public/anon; safe to embed)
+// ────────────────────────────────────────────────────────────
 const db = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
-const $ = (id) => document.getElementById(id);
-const fmt = (n) => (n == null ? "—" : Number(n).toLocaleString());
-let chart;
+const $ = (id)=>document.getElementById(id);
+const fmt = (n)=> n==null? "—" : Number(n).toLocaleString();
+const charts = {};
+const D = {}; // fetched data cache
 
-// ── auth ──────────────────────────────────────────────────
-async function sendCode() {
-  const email = $("email").value.trim();
-  if (!email) return;
-  $("sendBtn").disabled = true; setMsg("loginMsg", "Sending…");
-  const { error } = await db.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-  $("sendBtn").disabled = false;
-  if (error) return setMsg("loginMsg", error.message, "err");
-  $("step-email").classList.add("hidden"); $("step-code").classList.remove("hidden");
-  setMsg("loginMsg", "Code sent — check your email.", "ok");
-}
-async function verifyCode() {
-  const email = $("email").value.trim(), token = $("code").value.trim();
-  if (!token) return;
-  $("verifyBtn").disabled = true; setMsg("loginMsg", "Verifying…");
-  const { error } = await db.auth.verifyOtp({ email, token, type: "email" });
-  $("verifyBtn").disabled = false;
-  if (error) return setMsg("loginMsg", error.message, "err");
+const NAV = [
+  ["overview","Overview"], ["moderation","Moderation"], ["match","Match Quality"],
+  ["verify","Verification & Risk"], ["audience","Audience"], ["behavior","User Behavior"], ["revenue","Revenue"],
+];
+const SYS = [
+  ["Selfie verification","ok","Active"], ["Reports & blocks","ok","Active"],
+  ["Semantic matching","ok","Active"], ["Today's picks","ok","Active"],
+  ["Voice calls","dev","Simulated"], ["Payments (RevenueCat/UPI)","road","Roadmap"],
+  ["AI content moderation","road","Roadmap"], ["Fake-profile ML","road","Roadmap"],
+  ["Billing-fraud ML","road","Roadmap"],
+];
+
+// ── auth ────────────────────────────────────────────────────
+function setMsg(id,t,k){const e=$(id);e.textContent=t||"";e.className="msg "+(k||"");}
+$("sendBtn").onclick = async ()=>{
+  const email=$("email").value.trim(); if(!email)return;
+  $("sendBtn").disabled=true; setMsg("loginMsg","Sending…");
+  const {error}=await db.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
+  $("sendBtn").disabled=false;
+  if(error)return setMsg("loginMsg",error.message,"err");
+  $("step-email").classList.add("hidden");$("step-code").classList.remove("hidden");
+  setMsg("loginMsg","Code sent — check your email.","ok");
+};
+$("verifyBtn").onclick = async ()=>{
+  const email=$("email").value.trim(), token=$("code").value.trim(); if(!token)return;
+  $("verifyBtn").disabled=true; setMsg("loginMsg","Verifying…");
+  const {error}=await db.auth.verifyOtp({email,token,type:"email"});
+  $("verifyBtn").disabled=false;
+  if(error)return setMsg("loginMsg",error.message,"err");
   boot();
+};
+$("backBtn").onclick=()=>{$("step-code").classList.add("hidden");$("step-email").classList.remove("hidden");setMsg("loginMsg","");};
+$("refreshBtn").onclick=loadAll;
+$("signoutBtn").onclick=async()=>{await db.auth.signOut();location.reload();};
+
+// ── nav + status ────────────────────────────────────────────
+function buildNav(){
+  $("nav").innerHTML = NAV.map(([k,label],i)=>`<a data-nav="${k}" class="${i===0?'on':''}">${label}<span class="dot"></span></a>`).join("");
+  document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.nav));
+  $("sysStatus").innerHTML = SYS.map(([n,c,t])=>`<div class="srow"><span>${n}</span><span class="st ${c}">${t}</span></div>`).join("");
 }
-function setMsg(id, text, kind) { const el = $(id); el.textContent = text || ""; el.className = "msg " + (kind || ""); }
+function go(page){
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.nav===page));
+  document.querySelectorAll("section.page").forEach(s=>s.classList.toggle("on",s.dataset.page===page));
+  $("pageTitle").textContent = (NAV.find(n=>n[0]===page)||[])[1] || "";
+}
 
-$("sendBtn").onclick = sendCode;
-$("verifyBtn").onclick = verifyCode;
-$("backBtn").onclick = () => { $("step-code").classList.add("hidden"); $("step-email").classList.remove("hidden"); setMsg("loginMsg",""); };
-$("refreshBtn").onclick = loadAll;
-$("signoutBtn").onclick = async () => { await db.auth.signOut(); location.reload(); };
-
-// ── dashboard ─────────────────────────────────────────────
-async function boot() {
-  const { data } = await db.auth.getSession();
-  if (!data.session) return; // still on login
+// ── boot + load ─────────────────────────────────────────────
+async function boot(){
+  const {data}=await db.auth.getSession(); if(!data.session)return;
   $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-  loadAll();
+  buildNav(); loadAll();
 }
-
-async function loadAll() {
+async function rpc(fn,args){const {data,error}=await db.rpc(fn,args||{}); if(error)throw error; return data;}
+async function loadAll(){
   setMsg("dashMsg","Loading…");
-  const [ov, ts, rep] = await Promise.all([
-    db.rpc("admin_overview"),
-    db.rpc("admin_timeseries", { days: 14 }),
-    db.rpc("admin_recent_reports", { lim: 30 }),
-  ]);
-  if (ov.error) {
-    if ((ov.error.message || "").includes("NOT_ADMIN")) {
-      setMsg("dashMsg",
-        "You're signed in, but not an admin yet. Run this once in the Supabase SQL editor: " +
-        "insert into admins (user_id) select id from auth.users where email = '<your email>';", "err");
-    } else setMsg("dashMsg", ov.error.message, "err");
-    return;
+  try{
+    const [ov,ts,rep,reasons,highrisk,mq,vf,demo,lang,city,hour,rev] = await Promise.all([
+      rpc("admin_overview"), rpc("admin_timeseries",{days:14}), rpc("admin_recent_reports",{lim:30}),
+      rpc("admin_reports_by_reason"), rpc("admin_most_reported",{lim:10}), rpc("admin_match_quality"),
+      rpc("admin_verification"), rpc("admin_demographics"), rpc("admin_by_language",{lim:12}),
+      rpc("admin_by_city",{lim:12}), rpc("admin_calls_by_hour"), rpc("admin_revenue"),
+    ]);
+    Object.assign(D,{ov,ts,rep,reasons,highrisk,mq,vf,demo,lang,city,hour,rev});
+    setMsg("dashMsg","");
+    $("asOf").textContent = "As of "+new Date(ov.generated_at).toLocaleString();
+    renderAll();
+  }catch(e){
+    if((e.message||"").includes("NOT_ADMIN"))
+      setMsg("dashMsg","Signed in, but not an admin. Run in the Supabase SQL editor: insert into admins (user_id) select id from auth.users where email='<your email>';","err");
+    else setMsg("dashMsg",e.message||String(e),"err");
   }
-  setMsg("dashMsg","");
-  renderKPIs(ov.data);
-  renderChart(ts.data || []);
-  renderReports(rep.data || []);
 }
 
-function card(label, val, sub) {
-  return `<div class="kpi"><div class="label">${label}</div><div class="val">${val}</div>` +
-         (sub ? `<div class="sub">${sub}</div>` : "") + `</div>`;
+// ── render helpers ──────────────────────────────────────────
+function card(l,v,s){return `<div class="kpi"><div class="label">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:""}</div>`;}
+const PAL=["#FF8A3D","#FF3D8A","#8A3FFC","#2EE6D6","#7C93FF","#FFB020","#F1453A","#22C55E"];
+function chart(id,cfg){ if(charts[id])charts[id].destroy(); charts[id]=new Chart($(id).getContext("2d"),cfg); }
+const axis={grid:{color:"#232838"},ticks:{color:"#8B90A3"}};
+const noLegend={plugins:{legend:{display:false}}};
+function bar(id,labels,data,horizontal){
+  chart(id,{type:"bar",data:{labels,datasets:[{data,backgroundColor:PAL.map((c,i)=>PAL[i%PAL.length]),borderRadius:6}]},
+    options:{indexAxis:horizontal?"y":"x",responsive:true,maintainAspectRatio:false,...noLegend,scales:{x:axis,y:axis}}});
 }
-function renderKPIs(d) {
-  $("asOf").textContent = "As of " + new Date(d.generated_at).toLocaleString();
-  $("grid-users").innerHTML =
-    card("Total users", fmt(d.users_total)) +
-    card("New today", fmt(d.users_new_today)) +
-    card("New (7d)", fmt(d.users_new_7d)) +
-    card("Verified", fmt(d.users_verified), d.users_total ? Math.round(100*d.users_verified/d.users_total)+"% of users" : "") +
-    card("With embedding", fmt(d.users_embedded), "semantic match ready");
-  $("grid-activity").innerHTML =
-    card("Calls (all-time)", fmt(d.calls_total)) +
-    card("Calls today", fmt(d.calls_today)) +
-    card("Calls (7d)", fmt(d.calls_7d)) +
-    card("Avg call", d.calls_avg_min != null ? d.calls_avg_min + " min" : "—") +
-    card("Active callers (7d)", fmt(d.active_callers_7d));
-  $("grid-connections").innerHTML =
-    card("Matches", fmt(d.matches_total)) +
-    card("Matches (7d)", fmt(d.matches_7d)) +
-    card("Messages", fmt(d.messages_total)) +
-    card("Messages today", fmt(d.messages_today)) +
-    card("Lounges", fmt(d.lounges_total));
-  $("grid-money").innerHTML =
-    card("Active subscribers", fmt(d.subs_active)) +
-    card("Coins in circulation", fmt(d.coins_total)) +
-    card("Gifts sent", fmt(d.gifts_sent)) +
-    card("Open reports", fmt(d.reports_open), fmt(d.reports_total) + " all-time");
+function doughnut(id,labels,data){
+  chart(id,{type:"doughnut",data:{labels,datasets:[{data,backgroundColor:PAL}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8B90A3",boxWidth:12}}}}});
 }
 
-function renderChart(rows) {
-  const labels = rows.map(r => r.day.slice(5)); // MM-DD
-  const mk = (key) => rows.map(r => r[key]);
-  const ctx = $("chart").getContext("2d");
-  if (chart) chart.destroy();
-  const line = (label, data, color) => ({ label, data, borderColor: color, backgroundColor: color+"22",
-    tension:.35, borderWidth:2, pointRadius:2, fill:true });
-  chart = new Chart(ctx, {
-    type: "line",
-    data: { labels, datasets: [
-      line("Signups", mk("signups"), "#FF8A3D"),
-      line("Calls",   mk("calls"),   "#FF3D8A"),
-      line("Matches", mk("matches"), "#8A3FFC"),
-    ]},
-    options: { responsive:true, maintainAspectRatio:false,
-      plugins:{ legend:{ labels:{ color:"#8B90A3", boxWidth:12 } } },
-      scales:{ x:{ grid:{color:"#232838"}, ticks:{color:"#8B90A3"} },
-               y:{ grid:{color:"#232838"}, ticks:{color:"#8B90A3"}, beginAtZero:true } } }
+function renderAll(){
+  const d=D.ov;
+  // Overview
+  $("ov-users").innerHTML =
+    card("Total users",fmt(d.users_total)) + card("New today",fmt(d.users_new_today)) +
+    card("New (7d)",fmt(d.users_new_7d)) + card("Verified",fmt(d.users_verified), d.users_total?Math.round(100*d.users_verified/d.users_total)+"%":"") +
+    card("Embedded",fmt(d.users_embedded)) + card("Calls (7d)",fmt(d.calls_7d)) +
+    card("Active callers (7d)",fmt(d.active_callers_7d)) + card("Matches",fmt(d.matches_total)) +
+    card("Messages",fmt(d.messages_total)) + card("Open reports",fmt(d.reports_open));
+  growth("c-growth"); growth("c-growth2");
+
+  // Moderation
+  $("mod-kpis").innerHTML =
+    card("Open reports",fmt(d.reports_open)) + card("Total reports",fmt(d.reports_total)) +
+    card("Reported users",fmt(D.vf.reported_users)) + card("Blocks",fmt(D.vf.blocks));
+  bar("c-reasons", D.reasons.map(r=>r.reason), D.reasons.map(r=>r.total), true);
+  const hr=$("highrisk"); hr.innerHTML=""; $("highriskEmpty").classList.toggle("hidden",D.highrisk.length>0);
+  D.highrisk.forEach(u=>hr.insertAdjacentHTML("beforeend",`<tr><td>${u.name??"—"}</td><td>${u.verified?"✓":"—"}</td><td>${u.reports}</td></tr>`));
+  renderReports();
+
+  // Match quality
+  const m=D.mq;
+  $("match-kpis").innerHTML =
+    card("Matches",fmt(m.matches_total)) + card("Matches (7d)",fmt(m.matches_7d)) +
+    card("Match rate",(m.match_rate_pct??0)+"%","of ended calls") +
+    card("Avg rating",m.avg_stars!=null?m.avg_stars+"★":"—", fmt(m.feedback_count)+" ratings") +
+    card("Talk-again yes",(m.talk_again_yes_pct??0)+"%") + card("Completion",(m.completion_pct??0)+"%","calls finished");
+
+  // Verification
+  const v=D.vf;
+  $("verify-kpis").innerHTML =
+    card("Verified",fmt(v.verified), v.total?Math.round(100*v.verified/v.total)+"%":"") +
+    card("Unverified",fmt(v.unverified)) + card("Active (in deck)",fmt(v.active)) +
+    card("Inactive",fmt(v.inactive)) + card("Reported users",fmt(v.reported_users)) + card("Blocks",fmt(v.blocks));
+
+  // Audience
+  const g=D.demo.gender||{};
+  doughnut("c-gender", Object.keys(g), Object.values(g));
+  const a=D.demo.age||{};
+  bar("c-age", ["18–24","25–34","35–44","45+"], [a["18_24"],a["25_34"],a["35_44"],a["45_plus"]]);
+  bar("c-lang", D.lang.map(x=>x.language), D.lang.map(x=>x.users), true);
+  bar("c-city", D.city.map(x=>x.city), D.city.map(x=>x.users), true);
+
+  // Behavior
+  bar("c-hour", D.hour.map(h=>h.hour+":00"), D.hour.map(h=>h.calls));
+
+  // Revenue
+  const r=D.rev, tiers=r.subs_by_tier||{};
+  const tierStr=Object.keys(tiers).length?Object.entries(tiers).map(([k,v])=>`${k}: ${v}`).join(" · "):"none";
+  $("rev-kpis").innerHTML =
+    card("Active subs",fmt(r.subs_active),tierStr) + card("Coins in circulation",fmt(r.coins_total)) +
+    card("Gifts sent",fmt(r.gifts_sent)) + card("Coins spent on gifts",fmt(r.gifts_coins_spent));
+}
+function growth(id){
+  const rows=D.ts||[]; const line=(l,k,c)=>({label:l,data:rows.map(r=>r[k]),borderColor:c,backgroundColor:c+"22",tension:.35,borderWidth:2,pointRadius:2,fill:true});
+  chart(id,{type:"line",data:{labels:rows.map(r=>r.day.slice(5)),datasets:[line("Signups","signups","#FF8A3D"),line("Calls","calls","#FF3D8A"),line("Matches","matches","#8A3FFC")]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8B90A3",boxWidth:12}}},scales:{x:axis,y:{...axis,beginAtZero:true}}}});
+}
+function renderReports(){
+  const body=$("reportsBody"); body.innerHTML=""; $("reportsEmpty").classList.toggle("hidden",D.rep.length>0);
+  D.rep.forEach(r=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${r.reporter_name??"—"}</td><td>${r.reported_name??"—"}</td><td>${r.reason??""}${r.detail?`<div style="color:var(--muted);font-size:11px">${r.detail}</div>`:""}</td>`+
+      `<td>${new Date(r.created_at).toLocaleDateString()}</td><td>${r.resolved?'<span class="pill done">resolved</span>':'<span class="pill open">open</span>'}</td><td></td>`;
+    if(!r.resolved){const b=document.createElement("button");b.className="mini";b.textContent="Resolve";
+      b.onclick=async()=>{b.disabled=true;await db.rpc("admin_resolve_report",{rid:r.id});loadAll();};tr.lastElementChild.appendChild(b);}
+    body.appendChild(tr);
   });
 }
-
-function renderReports(rows) {
-  const body = $("reportsBody"), empty = $("reportsEmpty");
-  body.innerHTML = "";
-  empty.classList.toggle("hidden", rows.length > 0);
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML =
-      `<td>${r.reporter_name ?? "—"}</td>` +
-      `<td>${r.reported_name ?? "—"}</td>` +
-      `<td>${r.reason ?? ""}${r.detail ? `<div style="color:var(--muted);font-size:11px">${r.detail}</div>` : ""}</td>` +
-      `<td>${new Date(r.created_at).toLocaleDateString()}</td>` +
-      `<td>${r.resolved ? '<span class="pill done">resolved</span>' : '<span class="pill open">open</span>'}</td>` +
-      `<td></td>`;
-    if (!r.resolved) {
-      const btn = document.createElement("button");
-      btn.className = "mini"; btn.textContent = "Resolve";
-      btn.onclick = async () => { btn.disabled = true; await db.rpc("admin_resolve_report", { rid: r.id }); loadAll(); };
-      tr.lastElementChild.appendChild(btn);
-    }
-    body.appendChild(tr);
-  }
-}
-
-// start: if already signed in, jump straight to the dashboard
 boot();
 </script>
 </body>
