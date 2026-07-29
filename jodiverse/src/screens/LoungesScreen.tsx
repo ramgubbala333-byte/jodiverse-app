@@ -48,37 +48,41 @@ export default function LoungesScreen() {
       style={s.wrap}
       data={lounges}
       keyExtractor={(l) => l.id}
-      numColumns={2}
-      columnWrapperStyle={{ gap: 12 }}
-      contentContainerStyle={{ padding: 16, paddingTop: 56, paddingBottom: 28 }}
+      contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 56, paddingBottom: 28, gap: 14 }}
       refreshControl={<RefreshControl refreshing={refreshing} tintColor={theme.gold}
         onRefresh={() => { setRefreshing(true); load(); }} />}
       ListHeaderComponent={
-        <View style={{ marginBottom: 8 }}>
-          <Text style={s.title}>Lounges</Text>
+        <View style={{ marginBottom: 6 }}>
+          <Text style={s.eyebrow}>HAPPENING NOW</Text>
+          <Text style={s.title}>Voice Lounges</Text>
           <Text style={s.sub}>Live rooms. Drop in, listen, join the conversation.</Text>
         </View>
       }
       renderItem={({ item: l }) => {
         const total = l.listeners + l.speakers;
+        const live = total > 0;
         return (
-          <PressableScale style={s.card} scaleTo={0.97} haptics="light"
+          <PressableScale style={s.card} scaleTo={0.98} haptics="light"
             onPress={() => nav.navigate("LoungeRoom", { loungeId: l.id, topic: l.topic, title: l.title })}>
             <LinearGradient colors={[...(GRAD[l.topic] ?? theme.grad)]}
-              start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={StyleSheet.absoluteFill} />
-            <Text style={s.emoji}>{EMOJI[l.topic] ?? "🎙️"}</Text>
-            <View style={{ flex: 1 }} />
-            <Text style={s.cardTitle}>{l.title}</Text>
-            <View style={s.liveRow}>
-              {total > 0 ? (
-                <>
-                  <View style={s.liveDot} />
-                  <Text style={s.liveText}>{total} here · {l.speakers} talking</Text>
-                </>
+              start={{ x: 0, y: 0 }} end={{ x: 0, y: 1 }} style={s.accent} />
+            <View style={s.cardTop}>
+              {live ? (
+                <View style={s.livePill}>
+                  <View style={s.liveDot} /><Text style={s.liveText}>LIVE</Text>
+                </View>
               ) : (
-                <Text style={s.emptyText}>Start the room</Text>
+                <View style={s.quietPill}><Text style={s.quietText}>QUIET</Text></View>
               )}
+              <View style={s.listenerRow}>
+                <Ionicons name="people" size={14} color={theme.muted} />
+                <Text style={s.listenerText}>{total}</Text>
+              </View>
             </View>
+            <Text style={s.cardTitle}>{EMOJI[l.topic] ?? "🎙️"}  {l.title}</Text>
+            <Text style={s.cardSub}>
+              {live ? `${l.speakers} talking now · ${l.listeners} listening` : "Be the first to start this room"}
+            </Text>
           </PressableScale>
         );
       }}
@@ -89,14 +93,21 @@ export default function LoungesScreen() {
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg },
   center: { alignItems: "center", justifyContent: "center" },
-  title: { color: theme.ink, fontSize: 30, fontFamily: theme.font.display, letterSpacing: -0.8 },
+  eyebrow: { color: theme.gold, fontSize: 11, fontFamily: theme.font.black, letterSpacing: 2 },
+  title: { color: theme.ink, fontSize: 28, fontFamily: theme.font.display, letterSpacing: -0.8, marginTop: 6 },
   sub: { color: theme.muted, fontSize: 14, marginTop: 8 },
-  card: { flex: 1, aspectRatio: 1, borderRadius: theme.radii.lg, overflow: "hidden", padding: 15,
-    marginBottom: 12, ...theme.shadow.card },
-  emoji: { fontSize: 30 },
-  cardTitle: { color: "#fff", fontSize: 16, fontFamily: theme.font.black, lineHeight: 20 },
-  liveRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 6 },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: "#fff" },
-  liveText: { color: "rgba(255,255,255,.95)", fontSize: 11.5, fontFamily: theme.font.bold },
-  emptyText: { color: "rgba(255,255,255,.8)", fontSize: 11.5, fontFamily: theme.font.bold },
+  card: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, padding: 18, paddingLeft: 22, overflow: "hidden", ...theme.shadow.card },
+  accent: { position: "absolute", left: 0, top: 0, bottom: 0, width: 5 },
+  cardTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
+  livePill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(46,230,214,0.12)",
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: theme.emerald },
+  liveText: { color: theme.emerald, fontSize: 10.5, fontFamily: theme.font.black, letterSpacing: 1 },
+  quietPill: { backgroundColor: theme.card2, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5 },
+  quietText: { color: theme.muted, fontSize: 10.5, fontFamily: theme.font.black, letterSpacing: 1 },
+  listenerRow: { flexDirection: "row", alignItems: "center", gap: 5 },
+  listenerText: { color: theme.muted, fontSize: 13, fontFamily: theme.font.bold },
+  cardTitle: { color: theme.ink, fontSize: 17, fontFamily: theme.font.bold, lineHeight: 23 },
+  cardSub: { color: theme.muted, fontSize: 13, marginTop: 6, lineHeight: 18 },
 });

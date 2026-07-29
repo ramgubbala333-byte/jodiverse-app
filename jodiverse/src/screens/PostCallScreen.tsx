@@ -64,9 +64,18 @@ export default function PostCallScreen() {
         ))}
       </View>
 
-      <Text style={s.callMeta}>
-        {mins > 0 ? `${mins}m ${secs}s` : `${secs}s`} with {name}
-      </Text>
+      <View style={s.avatarWrap}>
+        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.avatarRing}>
+          <View style={s.avatarInner}>
+            <Text style={s.avatarInitial}>{name?.[0]?.toUpperCase() ?? "?"}</Text>
+          </View>
+        </LinearGradient>
+        <View style={s.durBadge}>
+          <Text style={s.durText}>
+            {String(mins).padStart(2, "0")}:{String(secs).padStart(2, "0")}
+          </Text>
+        </View>
+      </View>
 
       {/* 1 — how did it feel */}
       {step === 0 && (
@@ -155,7 +164,17 @@ const s = StyleSheet.create({
   progress: { flexDirection: "row", gap: 6, justifyContent: "center" },
   pip: { width: 34, height: 4, borderRadius: 2, backgroundColor: theme.line },
   callMeta: { color: theme.muted, fontSize: 13, textAlign: "center", marginTop: 16 },
-  body: { flex: 1, marginTop: 40 },
+  avatarWrap: { alignItems: "center", marginTop: 26 },
+  avatarRing: { width: 96, height: 96, borderRadius: 48, padding: 3, alignItems: "center",
+    justifyContent: "center", ...theme.shadow.cta },
+  avatarInner: { width: "100%", height: "100%", borderRadius: 46, backgroundColor: theme.card2,
+    alignItems: "center", justifyContent: "center" },
+  avatarInitial: { color: theme.ink, fontSize: 34, fontFamily: theme.font.black },
+  durBadge: { backgroundColor: theme.gold, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4,
+    marginTop: -12, borderWidth: 2, borderColor: theme.bg },
+  durText: { color: theme.onGold, fontSize: 12.5, fontFamily: theme.font.black,
+    fontVariant: ["tabular-nums"] },
+  body: { flex: 1, marginTop: 30 },
   q: { color: theme.ink, fontSize: 27, fontFamily: theme.font.display, textAlign: "center",
     letterSpacing: -0.8, lineHeight: 33 },
   qSub: { color: theme.muted, fontSize: 13.5, textAlign: "center", marginTop: 10,

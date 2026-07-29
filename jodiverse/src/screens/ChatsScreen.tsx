@@ -13,6 +13,10 @@ type M = { id: string; other: string; other_name: string; photo: string | null;
 const REPORT_REASONS = ["Fake profile / scam", "Inappropriate messages",
   "Inappropriate photos", "Underage", "Harassment", "Other"];
 
+// Deterministic colourful avatar backgrounds (Stitch-style) — same person
+// always gets the same hue.
+const AVATAR_COLORS = ["#8A3FFC", "#FF4B89", "#FF7A2E", "#3FA9FF", "#22C55E", "#F5A623"];
+
 type Stale = { match_id: string; other_id: string; other_name: string;
   shared_interest: string | null; matched_at: string };
 
@@ -119,9 +123,10 @@ export default function ChatsScreen() {
     <Image source={{ uri: m.photo }} style={{ width: size, height: size, borderRadius: size / 2 }} />
   ) : (
     <View>
-      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.card2,
-        alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.line }}>
-        <Text style={{ color: theme.ink, fontWeight: "700", fontSize: size / 2.6 }}>
+      <View style={{ width: size, height: size, borderRadius: size / 2,
+        backgroundColor: AVATAR_COLORS[(m.other_name.charCodeAt(0) || 0) % AVATAR_COLORS.length],
+        alignItems: "center", justifyContent: "center" }}>
+        <Text style={{ color: "#fff", fontWeight: "800", fontSize: size / 2.6 }}>
           {m.other_name[0]?.toUpperCase() ?? "?"}
         </Text>
       </View>
