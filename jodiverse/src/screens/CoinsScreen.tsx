@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator,
+  View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, TextInput,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -30,10 +30,32 @@ export default function CoinsScreen() {
   const insets = useSafeAreaInsets();
   const [balance, setBalance] = useState<number | null>(null);
   const [busy, setBusy] = useState<number | null>(null);
+  const [promo, setPromo] = useState("");
+  const [promoBusy, setPromoBusy] = useState(false);
 
   const refresh = () =>
     supabase.rpc("my_coin_balance").then(({ data }) => setBalance(data ?? 0));
   useEffect(() => { refresh(); }, []);
+
+  const redeemPromo = async () => {
+    const code = promo.trim();
+    if (!code) return;
+    setPromoBusy(true);
+    const { data, error } = await supabase.rpc("redeem_promo", { p_code: code });
+    setPromoBusy(false);
+    if (error) {
+      const map: Record<string, string> = {
+        INVALID_CODE: "That code isn't valid.",
+        CODE_EXPIRED: "That code has expired.",
+        CODE_EXHAUSTED: "That code has been fully claimed.",
+        ALREADY_USED: "You've already used that code.",
+      };
+      Alert.alert("Couldn't redeem", map[error.message] ?? error.message);
+      return;
+    }
+    setPromo(""); setBalance(data?.balance ?? null); haptic.success();
+    Alert.alert("Code redeemed 🎉", `${data?.coins ?? 0} coins added — you have ${(data?.balance ?? 0).toLocaleString()}.`);
+  };
 
   const buy = async (p: Pack) => {
     if (!DEV_INSTANT_CREDIT) {
@@ -61,6 +83,27 @@ export default function CoinsScreen() {
           </Text>
         </View>
       </View>
+
+      {/* redeem a promo / coupon code */}
+      <View style={s.promoCard}>
+        <TextInput style={s.promoInput} placeholder="Have a promo code?" autoCapitalize="characters"
+          value={promo} onChangeText={setPromo} placeholderTextColor={theme.muted}
+          onSubmitEditing={redeemPromo} returnKeyType="done" />
+        <TouchableOpacity style={[s.promoBtn, (promoBusy || !promo.trim()) && { opacity: 0.5 }]}
+          onPress={redeemPromo} disabled={promoBusy || !promo.trim()}>
+          {promoBusy ? <ActivityIndicator color={theme.onGold} /> : <Text style={s.promoBtnText}>Redeem</Text>}
+        </TouchableOpacity>
+      </View>
+
+      {/* invite & earn */}
+      <PressableScale style={s.inviteRow} onPress={() => nav.navigate("Referral")}>
+        <Ionicons name="gift" size={20} color={theme.gold} />
+        <View style={{ flex: 1 }}>
+          <Text style={s.inviteTitle}>Invite friends & earn coins</Text>
+          <Text style={s.inviteSub}>You both get 100 coins for every friend who joins.</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.muted} />
+      </PressableScale>
 
       <Text style={s.h1}>Get coins</Text>
       <Text style={s.sub}>
@@ -118,6 +161,17 @@ const s = StyleSheet.create({
   balanceLabel: { color: theme.muted, fontSize: 12, fontFamily: theme.font.semibold },
   balanceVal: { color: theme.ink, fontSize: 26, fontFamily: theme.font.black, marginTop: 2 },
   balanceSub: { color: theme.muted, fontSize: 13, fontFamily: theme.font.medium },
+  promoCard: { flexDirection: "row", gap: 10, marginTop: 16 },
+  promoInput: { flex: 1, backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.md, paddingHorizontal: 14, paddingVertical: 13, color: theme.ink, fontSize: 15 },
+  promoBtn: { backgroundColor: theme.gold, borderRadius: theme.radii.md, paddingHorizontal: 20,
+    alignItems: "center", justifyContent: "center", ...theme.shadow.cta },
+  promoBtnText: { color: theme.onGold, fontFamily: theme.font.black, fontSize: 14 },
+  inviteRow: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12,
+    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.md,
+    padding: 15, ...theme.shadow.card },
+  inviteTitle: { color: theme.ink, fontSize: 14.5, fontFamily: theme.font.bold },
+  inviteSub: { color: theme.muted, fontSize: 11.5, marginTop: 2, lineHeight: 16 },
   h1: { color: theme.ink, fontSize: 27, fontFamily: theme.font.display, marginTop: 28,
     letterSpacing: -0.8 },
   sub: { color: theme.muted, fontSize: 14, marginTop: 10, lineHeight: 20, marginBottom: 18 },

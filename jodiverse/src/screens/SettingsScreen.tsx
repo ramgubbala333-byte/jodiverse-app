@@ -374,6 +374,9 @@ export default function SettingsScreen() {
       </Section>
 
       <Section title="Share & support">
+        <LinkRow title="Invite & earn coins"
+          sub="Share your code — you both get 100 coins per friend who joins."
+          onPress={() => nav.navigate("Referral")} />
         <LinkRow title="Share Dosti Connect"
           sub="Help a friend talk their way to a real connection." onPress={shareApp} />
         <LinkRow title="Get Help"
