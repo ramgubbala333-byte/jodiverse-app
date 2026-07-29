@@ -24,16 +24,33 @@ Deno.serve(async (req) => {
     // not just interests + bio — so semantic matching reflects the whole person.
     const { data: prof } = await userClient
       .from("profiles")
-      .select("interests, bio, occupation, values_text, fun_facts, relationship_goal, lifestyle")
+      .select("interests, bio, occupation, values_text, fun_facts, relationship_goal, lifestyle, compat")
       .eq("id", user.id).maybeSingle();
 
     const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
     const interests: string[] = Array.isArray(prof?.interests) ? prof!.interests : [];
+
+    // Compatibility answers → a natural-language phrase so the vibe/values/lifestyle
+    // signal also lands in the embedding (structured scoring lives in match_score).
+    const COMPAT_PHRASE: Record<string, Record<string, string>> = {
+      social:  { intro: "introverted", ambi: "ambiverted", extro: "extroverted" },
+      vibe:    { deep: "loves deep conversations", fun: "keeps it light and fun", witty: "witty and playful", chill: "calm and easygoing" },
+      kids:    { yes: "wants kids someday", open: "open to kids", no: "does not want kids" },
+      family:  { high: "very family-oriented", mid: "somewhat family-oriented", indep: "independent-minded" },
+      clock:   { early: "an early bird", night: "a night owl" },
+      fitness: { high: "very active and into fitness", some: "occasionally active", low: "not into fitness" },
+      weekend: { social: "spends weekends out and social", cozy: "enjoys cozy weekends at home", outdoors: "loves outdoor adventures", mix: "likes a mix of weekends" },
+    };
+    const compat = (prof?.compat && typeof prof.compat === "object") ? prof.compat as Record<string, string> : {};
+    const compatBits = Object.entries(compat)
+      .map(([k, v]) => COMPAT_PHRASE[k]?.[v]).filter(Boolean);
+
     const text = [
       interests.length ? `Interests: ${interests.join(", ")}.` : "",
       str(prof?.occupation) ? `Work: ${str(prof?.occupation)}.` : "",
       str(prof?.relationship_goal) ? `Looking for: ${str(prof?.relationship_goal)}.` : "",
       str(prof?.lifestyle) ? `Lifestyle: ${str(prof?.lifestyle)}.` : "",
+      compatBits.length ? `Personality: ${compatBits.join(", ")}.` : "",
       str(prof?.values_text) ? `Values: ${str(prof?.values_text)}.` : "",
       str(prof?.fun_facts) ? `Fun facts: ${str(prof?.fun_facts)}.` : "",
       str(prof?.bio) ? `Bio: ${str(prof?.bio)}` : "",

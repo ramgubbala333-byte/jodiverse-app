@@ -21,6 +21,19 @@ const DRINKS = ["Never", "Rarely", "Socially", "Regularly"];
 const SMOKES = ["Never", "Socially", "Regularly", "Trying to quit"];
 const LIFESTYLES = ["Active & Outdoorsy", "Social & Outgoing", "Quiet & Homebody", "Creative & Artistic", "Career-Focused"];
 
+// Compatibility questionnaire — the heart of who you get voice-matched with.
+// Stored as profiles.compat jsonb; folded into match_score (compat-v24.sql).
+// [value, label] so the DB key stays stable even if we reword the label.
+const COMPAT_QUESTIONS: { key: string; q: string; opts: [string, string][] }[] = [
+  { key: "social",  q: "Your social energy", opts: [["intro", "Introvert"], ["ambi", "Ambivert"], ["extro", "Extrovert"]] },
+  { key: "vibe",    q: "Your conversation vibe", opts: [["deep", "Deep talks"], ["fun", "Light & fun"], ["witty", "Witty & playful"], ["chill", "Calm & chill"]] },
+  { key: "kids",    q: "Kids someday?", opts: [["yes", "Want them"], ["open", "Open to it"], ["no", "Don't want"], ["skip", "Rather not say"]] },
+  { key: "family",  q: "How family-oriented are you?", opts: [["high", "Very"], ["mid", "Somewhat"], ["indep", "Independent"]] },
+  { key: "clock",   q: "Early bird or night owl?", opts: [["early", "Early bird"], ["night", "Night owl"]] },
+  { key: "fitness", q: "Fitness & activity", opts: [["high", "Very active"], ["some", "Sometimes"], ["low", "Not my thing"]] },
+  { key: "weekend", q: "Ideal weekend", opts: [["social", "Out & social"], ["cozy", "Cozy at home"], ["outdoors", "Outdoors & adventure"], ["mix", "A mix"]] },
+];
+
 // ON HOLD: Claude bio generation via the generate-profile edge function.
 // Flip to true after running `supabase secrets set ANTHROPIC_API_KEY=...`.
 // While false, "Generate My Profile" composes the bio locally from the
@@ -71,6 +84,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [smoking, setSmoking] = useState<string | null>(null);
   const [heightCm, setHeightCm] = useState("");
 
+  const [compat, setCompat] = useState<Record<string, string>>({});
+  const setCompatKey = (k: string, v: string) => setCompat((c) => ({ ...c, [k]: v }));
+
   const [bio, setBio] = useState("");
   const [generated, setGenerated] = useState(false);
 
@@ -102,13 +118,13 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
     return a;
   };
 
-  // Page list: about (google-only) + 5 fixed pages.
-  const pages = [...(needsAbout ? ["about"] : []), "best", "more", "interests", "lifestyle", "generate"];
+  // Page list: about (google-only) + 6 fixed pages.
+  const pages = [...(needsAbout ? ["about"] : []), "best", "more", "interests", "lifestyle", "compat", "generate"];
   const current = pages[page];
-  // Display step (of 4): account was step 1; photos=2, more/interests=3, lifestyle/generate=4.
+  // Display step (of 4): account was step 1; photos=2, more/interests=3, lifestyle/compat/generate=4.
   const stepInfo: Record<string, [number, string]> = {
     about: [1, "25%"], best: [2, "50%"], more: [3, "75%"],
-    interests: [3, "75%"], lifestyle: [4, "100%"], generate: [4, "100%"],
+    interests: [3, "75%"], lifestyle: [4, "100%"], compat: [4, "100%"], generate: [4, "100%"],
   };
   const [stepNo, pct] = stepInfo[current] ?? [2, "50%"];
 
@@ -119,6 +135,7 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
       case "more": return true; // all optional, but feeds the AI
       case "interests": return interests.length >= 3;
       case "lifestyle": return !!lifestyle;
+      case "compat": return COMPAT_QUESTIONS.every((q) => !!compat[q.key]);
       case "generate": return generated || bio.trim().length > 0;
       default: return false;
     }
@@ -199,6 +216,7 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
         fun_facts: funFacts.trim() || null,
         lifestyle,
         interests,
+        compat,
         city: city.trim() || null,
         bio: bio.trim() || null,
       });
@@ -401,6 +419,25 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <TextInput style={s.input} value={heightCm} onChangeText={setHeightCm}
               placeholder="e.g. 172" keyboardType="number-pad" maxLength={3}
               placeholderTextColor={theme.muted} />
+          </>
+        )}
+
+        {current === "compat" && (
+          <>
+            <PageIcon name="extension-puzzle" />
+            <Text style={s.h1}>What makes you click</Text>
+            <Text style={s.sub}>A few quick taps — this is what we match you on. Voice-first, but with the right people.</Text>
+            {COMPAT_QUESTIONS.map((qq) => (
+              <View key={qq.key}>
+                <Text style={s.label}>{qq.q}</Text>
+                <View style={s.chipWrap}>
+                  {qq.opts.map(([val, lbl]) => (
+                    <Chip key={val} label={lbl} on={compat[qq.key] === val}
+                      onPress={() => setCompatKey(qq.key, val)} />
+                  ))}
+                </View>
+              </View>
+            ))}
           </>
         )}
 
