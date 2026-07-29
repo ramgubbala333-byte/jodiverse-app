@@ -112,15 +112,25 @@ export default function ChatsScreen() {
   const newJodis = filtered.filter((m) => !m.last);       // matched, not yet chatting
   const convos = filtered.filter((m) => !!m.last);        // active conversations
 
+  // Photo shown once mutually revealed; otherwise the person's initial — NOT a
+  // padlock. A lock icon reads as "you're blocked", but chat is always open here;
+  // photos are just hidden until you both reveal (a tiny badge hints at that).
   const Avatar = ({ m, size }: { m: M; size: number }) => m.revealed && m.photo ? (
     <Image source={{ uri: m.photo }} style={{ width: size, height: size, borderRadius: size / 2 }} />
   ) : (
-    <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.card2,
-      alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.line }}>
-      {m.revealed ? (
-        <Text style={{ color: theme.ink, fontWeight: "700", fontSize: size / 3 }}>{m.other_name[0]}</Text>
-      ) : (
-        <Ionicons name="lock-closed" size={size / 2.8} color={theme.muted} />
+    <View>
+      <View style={{ width: size, height: size, borderRadius: size / 2, backgroundColor: theme.card2,
+        alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: theme.line }}>
+        <Text style={{ color: theme.ink, fontWeight: "700", fontSize: size / 2.6 }}>
+          {m.other_name[0]?.toUpperCase() ?? "?"}
+        </Text>
+      </View>
+      {!m.revealed && (
+        <View style={{ position: "absolute", right: -1, bottom: -1, width: size / 3, height: size / 3,
+          borderRadius: size / 6, backgroundColor: theme.card, alignItems: "center", justifyContent: "center",
+          borderWidth: 1.5, borderColor: theme.bg }}>
+          <Ionicons name="lock-closed" size={size / 6} color={theme.muted} />
+        </View>
       )}
     </View>
   );

@@ -113,7 +113,15 @@ export default function ChatScreen() {
     // Matches chat without limits — monetization lives on likes/boosts instead.
     const { error } = await supabase.from("messages")
       .insert({ match_id: matchId, sender: me, body });
-    if (error) setText(body); // give their words back on any failure
+    if (error) {
+      setText(body); // give their words back
+      // Surface the real reason instead of silently eating it — a swallowed
+      // failure looks like "the app is locked and I can't do anything".
+      Alert.alert("Message didn't send",
+        error.message?.includes("row-level security")
+          ? "You're not in this conversation anymore — the match may have been removed or blocked."
+          : error.message ?? "Please try again.");
+    }
   };
 
   const sendPhoto = async () => {

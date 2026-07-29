@@ -17,7 +17,8 @@
       "PowerShell($gh = \"C:\\\\Program Files\\\\GitHub CLI\\\\gh.exe\"; if \\(Test-Path $gh\\) { & $gh --version; Write-Output \"PATH_CHECK:\"; \\(Get-Command gh -ErrorAction SilentlyContinue\\).Source } else { Write-Output \"gh.exe not at default path\" })",
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
-      "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('expo-haptics:', p['expo-haptics']||'MISSING'\\); console.log\\('expo-blur:', p['expo-blur']||'MISSING'\\);\")"
+      "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('expo-haptics:', p['expo-haptics']||'MISSING'\\); console.log\\('expo-blur:', p['expo-blur']||'MISSING'\\);\")",
+      "Bash(git push *)"
     ]
   }
 }
