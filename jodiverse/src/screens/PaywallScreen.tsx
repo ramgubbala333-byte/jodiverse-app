@@ -72,14 +72,12 @@ export default function PaywallScreen() {
     <View style={s.wrap}>
       <GlowBackdrop />
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 40 + insets.bottom }}>
-      <Text style={s.h1}>Find your person faster</Text>
-      <Text style={s.sub}>Talking is always free. Subscriptions buy reach and insight — never a person's time.</Text>
+      <Text style={s.h1}>Deepen the{"\n"}connection</Text>
+      <Text style={s.sub}>Premium tools built for high-intent, voice-first dating. Reach and insight — never a person's time.</Text>
 
-      <View style={s.freeBanner}>
-        <Ionicons name="mic" size={16} color={theme.emerald} />
-        <Text style={s.freeBannerText}>
-          Free forever: 3 voice calls/day, unlimited chat with matches, full safety tools.
-        </Text>
+      <View style={s.freePill}>
+        <Ionicons name="mic" size={15} color={theme.gold} />
+        <Text style={s.freePillText}>TALKING IS ALWAYS FREE</Text>
       </View>
 
       {/* tier selector — selected tab fills with the tier colour */}
@@ -138,17 +136,30 @@ export default function PaywallScreen() {
         ))}
       </GlassCard>
 
+      {/* feature highlights */}
+      <View style={s.tileRow}>
+        {([["flash", "Priority"], ["airplane", "Travel"], ["pulse", "Insights"]] as const).map(([ic, l]) => (
+          <View key={l} style={s.tile}>
+            <View style={s.tileIcon}><Ionicons name={ic as any} size={18} color={theme.gold} /></View>
+            <Text style={s.tileLabel}>{l}</Text>
+          </View>
+        ))}
+      </View>
+
       <PressableScale haptics="medium" onPress={() =>
         Alert.alert("Almost there", "Subscriptions launch with the app — powered by RevenueCat + UPI.")}>
         <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
           <Text style={s.ctaText}>
-            Get {tier.name} · {plan.label} for ₹{total}
+            Upgrade to {tier.name} · ₹{total}
           </Text>
         </LinearGradient>
       </PressableScale>
       <Text style={s.fine}>
         {plan.months === 1 ? "Recurring monthly billing" : `One payment of ₹${total}, renews every ${plan.months} months`} · cancel anytime · prices include GST
       </Text>
+      <TouchableOpacity onPress={() => nav.goBack()} style={s.laterBtn}>
+        <Text style={s.laterText}>MAYBE LATER</Text>
+      </TouchableOpacity>
 
       {/* coins are a separate, cosmetic-only purchase */}
       <PressableScale style={s.coinsCard} onPress={() => nav.navigate("Coins")}>
@@ -166,11 +177,26 @@ export default function PaywallScreen() {
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg, overflow: "hidden" },
-  h1: { color: theme.ink, fontSize: 28, fontFamily: theme.font.display, letterSpacing: -0.8 },
-  sub: { color: theme.muted, fontSize: 13, marginTop: 8, marginBottom: 16, lineHeight: 19 },
+  h1: { color: theme.rose, fontSize: 32, fontFamily: theme.font.display, letterSpacing: -1,
+    textAlign: "center", lineHeight: 38, marginTop: 6 },
+  sub: { color: theme.muted, fontSize: 13.5, marginTop: 12, marginBottom: 18, lineHeight: 20,
+    textAlign: "center", alignSelf: "center", maxWidth: 320 },
+  freePill: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    alignSelf: "center", borderWidth: 1, borderColor: "rgba(255,122,46,0.4)",
+    borderRadius: theme.radii.pill, paddingHorizontal: 18, paddingVertical: 12, marginBottom: 22,
+    backgroundColor: theme.goldSoft },
+  freePillText: { color: theme.gold, fontSize: 12.5, fontFamily: theme.font.black, letterSpacing: 1 },
   freeBanner: { flexDirection: "row", alignItems: "center", gap: 9,
     backgroundColor: theme.card2, borderRadius: theme.radii.md, padding: 13, marginBottom: 18 },
   freeBannerText: { color: theme.ink, fontSize: 12.5, flex: 1, lineHeight: 18 },
+  tileRow: { flexDirection: "row", gap: 10, marginTop: 20, marginBottom: 4 },
+  tile: { flex: 1, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, alignItems: "center", paddingVertical: 16, gap: 8, ...theme.shadow.card },
+  tileIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.goldSoft,
+    alignItems: "center", justifyContent: "center" },
+  tileLabel: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.bold },
+  laterBtn: { alignItems: "center", paddingVertical: 16, marginTop: 4 },
+  laterText: { color: theme.muted, fontSize: 13, fontFamily: theme.font.black, letterSpacing: 1.5 },
   tierRow: { flexDirection: "row", gap: 8, marginBottom: 10 },
   tierTab: { flex: 1, borderWidth: 2, borderColor: theme.line, borderRadius: theme.radii.md,
     paddingVertical: 13, alignItems: "center", backgroundColor: theme.card2 },

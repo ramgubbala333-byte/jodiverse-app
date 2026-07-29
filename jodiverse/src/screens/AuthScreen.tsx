@@ -12,6 +12,7 @@ import GlowBackdrop from "../components/GlowBackdrop";
 import { theme } from "../theme";
 
 const GENDERS = ["Woman", "Man", "Non-binary"] as const;
+const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
 
 const HIGHLIGHTS = [
   ["mic", "Voice First", "A real conversation tells you more than fifty photos ever could"],
@@ -328,106 +329,66 @@ export default function AuthScreen() {
     );
   }
 
-  // ── Marketing landing ───────────────────────────────────────────────────
+  // ── Landing — focused hero + login options (matches the Stitch design) ───
   return (
     <View style={s.wrap}>
       <GlowBackdrop />
-      <View style={s.topBar}>
-        <View style={s.brandRow}>
-          <Ionicons name="heart" size={20} color={theme.gold} />
-          <Text style={s.brand}>Dosti Connect</Text>
+      <ScrollView contentContainerStyle={[s.landingBody,
+        { paddingTop: insets.top + 20, paddingBottom: 30 + insets.bottom }]}
+        showsVerticalScrollIndicator={false}>
+        <View style={s.landingTop}>
+          <Text style={s.brand}>{WORDMARK}</Text>
+          <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            onPress={() => Alert.alert("How it works",
+              "Tap to talk — we connect you by voice with someone who shares your vibe. No swiping, no photos up front. Click on a call? Become friends and chat anytime, free.")}>
+            <Ionicons name="help-circle-outline" size={26} color={theme.muted} />
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity style={s.signUpPill} onPress={() => setPage("auth")}>
-          <Text style={s.signUpPillText}>Log in</Text>
-        </TouchableOpacity>
-      </View>
 
-      <ScrollView contentContainerStyle={[s.landingBody, { paddingBottom: 40 + insets.bottom }]} showsVerticalScrollIndicator={false}>
-        {/* hero */}
-        <Text style={s.heroTitle}>Talk first.{"\n"}Find your connection.</Text>
+        <Text style={s.heroTitle}>Talk first.{"\n"}Find your{"\n"}connection.</Text>
         <Text style={s.heroSub}>
-          No photos, no swiping. Get instantly connected for a real voice conversation
-          with someone who shares your interests — and let the chemistry lead.
+          Real voices. Real chemistry. Skip the endless swiping and start hearing the
+          soul behind the screen.
         </Text>
-        <TouchableOpacity onPress={() => setPage("auth")}>
+
+        <TouchableOpacity onPress={() => setPage("auth")} activeOpacity={0.9}>
           <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
-            <Text style={s.ctaText}>Start Talking</Text>
+            <Text style={s.ctaText}>Get started</Text>
           </LinearGradient>
         </TouchableOpacity>
-        <Text style={s.heroNote}>20 free minutes a day · you're connected in seconds</Text>
 
-        {/* key highlights */}
-        <Text style={s.sectionTitle}>Why voice-first</Text>
-        <View style={s.highlightRow}>
-          {HIGHLIGHTS.map(([icon, title, sub]) => (
-            <View key={title} style={s.highlightCard}>
-              <View style={s.highlightIcon}>
-                <Ionicons name={icon as any} size={20} color="#fff" />
-              </View>
-              <Text style={s.highlightTitle}>{title}</Text>
-              <Text style={s.highlightSub}>{sub}</Text>
-            </View>
+        <View style={s.orRow}>
+          <View style={s.orLine} /><Text style={s.orText}>OR LOG IN WITH</Text><View style={s.orLine} />
+        </View>
+
+        <TouchableOpacity style={s.optBtn} onPress={() => setPage("auth")}>
+          <Ionicons name="phone-portrait-outline" size={19} color={theme.gold} />
+          <Text style={s.optText}>Phone Number</Text>
+        </TouchableOpacity>
+        <View style={s.optSplit}>
+          <TouchableOpacity style={[s.optBtn, s.optHalf]} onPress={goGoogle} disabled={busy}>
+            <Ionicons name="logo-google" size={18} color={theme.ink} />
+            <Text style={s.optText}>Google</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[s.optBtn, s.optHalf]} onPress={() => setPage("up")}>
+            <Ionicons name="mail-outline" size={18} color={theme.gold} />
+            <Text style={s.optText}>Email</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* waveform + testimonial */}
+        <View style={s.waveRow}>
+          {[8, 15, 10, 22, 14, 28, 18, 32, 20, 12, 24, 10, 16, 9].map((h, i) => (
+            <View key={i} style={[s.waveBar, { height: h }]} />
           ))}
         </View>
+        <Text style={s.quote}>
+          "I fell in love with his laugh before I even knew what he looked like."
+        </Text>
 
-        {/* how it works */}
-        <Text style={s.sectionTitle}>How It Works</Text>
-        {HOW_IT_WORKS.map(([title, sub], i) => (
-          <View key={title} style={s.stepCard}>
-            <View style={s.stepNum}><Text style={s.stepNumText}>{i + 1}</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.stepCardTitle}>{title}</Text>
-              <Text style={s.stepCardSub}>{sub}</Text>
-            </View>
-          </View>
-        ))}
-
-        {/* success stories */}
-        <Text style={s.sectionTitle}>Success Stories</Text>
-        {STORIES.map(([who, yrs, quote]) => (
-          <View key={who} style={s.storyCard}>
-            <View style={s.storyHead}>
-              <View style={s.storyAvatar}>
-                <Text style={s.storyAvatarText}>{who[0]}</Text>
-              </View>
-              <Text style={s.storyName}>{who}</Text>
-              <Text style={s.storyAge}>· {yrs}</Text>
-            </View>
-            <Text style={s.storyQuote}>"{quote}"</Text>
-            <View style={s.storyStars}>
-              {[0, 1, 2, 3, 4].map((i) => (
-                <Ionicons key={i} name="star" size={13} color={theme.gold} />
-              ))}
-            </View>
-          </View>
-        ))}
-
-        {/* stats band */}
-        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={s.statsBand}>
-          <Text style={s.statsTitle}>Join Thousands Finding Love</Text>
-          <View style={s.statsRow}>
-            {[["12k+", "Success\nStories"], ["89%", "Match\nRate"], ["4.9", "App\nRating"]].map(([v, l]) => (
-              <View key={l} style={{ alignItems: "center" }}>
-                <Text style={s.statVal}>{v}</Text>
-                <Text style={s.statLabel}>{l}</Text>
-              </View>
-            ))}
-          </View>
-        </LinearGradient>
-
-        {/* final CTA */}
-        <View style={s.finalCard}>
-          <Text style={s.finalTitle}>Ready to Find Your{"\n"}Soulmate?</Text>
-          <Text style={s.finalSub}>Start your journey to meaningful connections today</Text>
-          <TouchableOpacity onPress={() => setPage("auth")}>
-            <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.cta}>
-              <Text style={s.ctaText}>Get Started – It's Free</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={() => setPage("auth")}>
-            <Text style={s.switch}>Already a member? Log in</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={s.legal}>
+          By continuing you accept our Community Guidelines & Terms of Use. We never sell your data.
+        </Text>
       </ScrollView>
     </View>
   );
@@ -446,15 +407,27 @@ const s = StyleSheet.create({
     paddingVertical: 9, ...theme.shadow.cta },
   signUpPillText: { color: "#fff", fontFamily: theme.font.bold, fontSize: 14 },
 
-  landingBody: { padding: 22, paddingBottom: 40 },
-  heroTitle: { color: theme.ink, fontSize: 38, fontFamily: theme.font.display, textAlign: "center",
-    marginTop: 30, lineHeight: 46, letterSpacing: -1 },
-  heroSub: { color: theme.muted, fontSize: 15, textAlign: "center", marginTop: 16,
-    lineHeight: 23, paddingHorizontal: 6 },
-  cta: { borderRadius: theme.radii.pill, paddingVertical: 17, alignItems: "center", marginTop: 22,
+  landingBody: { paddingHorizontal: 24, paddingBottom: 40 },
+  landingTop: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    marginBottom: 30 },
+  heroTitle: { color: theme.ink, fontSize: 44, fontFamily: theme.font.display, marginTop: 20,
+    lineHeight: 50, letterSpacing: -1.5 },
+  heroSub: { color: theme.muted, fontSize: 15.5, marginTop: 18, lineHeight: 24 },
+  cta: { borderRadius: theme.radii.pill, paddingVertical: 18, alignItems: "center", marginTop: 30,
     ...theme.shadow.cta },
-  ctaText: { color: "#fff", fontFamily: theme.font.black, fontSize: 16, letterSpacing: 0.2 },
+  ctaText: { color: "#fff", fontFamily: theme.font.black, fontSize: 16.5, letterSpacing: 0.2 },
   heroNote: { color: theme.muted, fontSize: 12.5, textAlign: "center", marginTop: 12 },
+  optBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10,
+    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.pill, paddingVertical: 17, marginBottom: 12 },
+  optText: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 15 },
+  optSplit: { flexDirection: "row", gap: 12 },
+  optHalf: { flex: 1 },
+  waveRow: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5,
+    marginTop: 40, height: 34 },
+  waveBar: { width: 5, borderRadius: 3, backgroundColor: "rgba(255,75,137,0.55)" },
+  quote: { color: theme.muted, fontSize: 14.5, fontStyle: "italic", textAlign: "center",
+    marginTop: 18, lineHeight: 22, paddingHorizontal: 10 },
 
   sectionTitle: { color: theme.ink, fontSize: 24, fontFamily: theme.font.displayMd, textAlign: "center",
     marginTop: 44, marginBottom: 18, letterSpacing: -0.5 },

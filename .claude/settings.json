@@ -24,7 +24,8 @@
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/**)",
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/home_talk_refined/**)",
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/your_profile_refined/**)",
-      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/chats_conversation/**)"
+      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/chats_conversation/**)",
+      "Bash(echo \"=== exit $? ===\")"
     ]
   }
 }
