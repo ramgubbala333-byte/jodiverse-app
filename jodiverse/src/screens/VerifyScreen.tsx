@@ -35,7 +35,7 @@ export default function VerifyScreen() {
       });
       if (error) throw error;
       if (!data?.ok) throw new Error(data?.reason ?? "verification_failed");
-      Alert.alert("Verified! ✓", "Your profile is now live in the deck.", [
+      Alert.alert("Verified! ✓", "You've got the verified badge — you're all set to start talking.", [
         { text: "Let's go", onPress: () => nav.goBack() },
       ]);
     } catch (e: any) {

@@ -36,7 +36,6 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import VerifyScreen from "./src/screens/VerifyScreen";
 import PaywallScreen from "./src/screens/PaywallScreen";
 import MatchProfileScreen from "./src/screens/MatchProfileScreen";
-import DashboardScreen from "./src/screens/DashboardScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
 import { registerPush } from "./src/lib/push";
 import { haptic } from "./src/lib/haptics";
@@ -235,9 +234,6 @@ export default function App() {
               options={{ gestureEnabled: true, animation: "slide_from_bottom" }} />
             <Stack.Screen name="CallSettings" component={CallSettingsScreen}
               options={{ headerShown: true, title: "Call & safety", headerTintColor: theme.ink,
-                headerStyle: { backgroundColor: theme.card } }} />
-            <Stack.Screen name="Dashboard" component={DashboardScreen}
-              options={{ headerShown: true, title: "Home", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Settings" component={SettingsScreen}
               options={{ headerShown: true, title: "Settings", headerTintColor: theme.ink,

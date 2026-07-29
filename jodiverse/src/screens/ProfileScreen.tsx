@@ -181,7 +181,7 @@ export default function ProfileScreen() {
         <TouchableOpacity style={s.banner} onPress={() => nav.navigate("Verify")}>
           <Ionicons name="shield-checkmark-outline" size={20} color={theme.gold} />
           <Text style={s.bannerText}>
-            Verify your profile to enter the deck — tap to take a quick selfie.
+            Verify your profile to start talking — tap to take a quick selfie.
           </Text>
           <Ionicons name="chevron-forward" size={18} color={theme.muted} />
         </TouchableOpacity>

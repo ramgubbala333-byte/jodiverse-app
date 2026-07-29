@@ -367,7 +367,7 @@ export default function MatchProfileScreen() {
       <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
         {self ? (
           <Text style={s.previewNote}>
-            👁 This is how your profile appears to others in the deck.
+            👁 This is how your profile appears to people you match with.
           </Text>
         ) : !matchId ? null : (
         <View style={s.actions}>

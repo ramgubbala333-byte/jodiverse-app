@@ -7,8 +7,6 @@ import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
 import { theme } from "../theme";
 
-// pref_distance = geohash prefix length: longer prefix ⇒ tighter radius
-const DISTANCES = [[6, "Nearby"], [5, "~5 km"], [4, "~20 km"], [3, "~80 km"], [0, "Any"]] as const;
 
 // ── sliders (no external deps: PanResponder thumbs over a plain track) ─────
 const AGE_LO = 18, AGE_HI = 99, THUMB = 26;
@@ -59,58 +57,6 @@ function AgeRangeSlider({ lo, hi, onCommit }: {
           <View style={[s.trackFill, { left: THUMB / 2 + x(v.lo), width: x(v.hi) - x(v.lo) }]} />
           <View style={[s.thumb, { left: x(v.lo) }]} {...loPan.panHandlers} hitSlop={HIT} />
           <View style={[s.thumb, { left: x(v.hi) }]} {...hiPan.panHandlers} hitSlop={HIT} />
-        </>}
-      </View>
-    </View>
-  );
-}
-
-// Single-thumb slider that snaps to a fixed list of options (e.g. distance).
-function SnapSlider({ label, options, value, onCommit }: {
-  label: string;
-  options: readonly (readonly [number, string])[];
-  value: number;
-  onCommit: (v: number) => void;
-}) {
-  const [w, setW] = useState(0);
-  const [idx, setIdx] = useState(() => Math.max(0, options.findIndex(([ov]) => ov === value)));
-  const ref = useRef({ w: 0, idx, start: 0, commit: onCommit });
-  ref.current.w = w; ref.current.idx = idx; ref.current.commit = onCommit;
-  useEffect(() => {
-    const i = options.findIndex(([ov]) => ov === value);
-    if (i >= 0) setIdx(i);
-  }, [value]);
-
-  const n = options.length - 1;
-  const trackW = Math.max(1, w - THUMB);
-  const pan = useRef(PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => { ref.current.start = ref.current.idx; },
-    onPanResponderMove: (_e, g) => {
-      const { w, start } = ref.current;
-      if (w <= THUMB) return;
-      const raw = start + (g.dx / (w - THUMB)) * n;
-      setIdx(Math.round(Math.min(n, Math.max(0, raw))));
-    },
-    onPanResponderRelease: () => ref.current.commit(options[ref.current.idx][0]),
-    onPanResponderTerminate: () => ref.current.commit(options[ref.current.idx][0]),
-  })).current;
-
-  return (
-    <View>
-      <View style={s.sliderHead}>
-        <Text style={s.prefLabel}>{label}</Text>
-        <Text style={s.sliderVal}>{options[idx][1]}</Text>
-      </View>
-      <View style={s.sliderWrap} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
-        <View style={s.track} />
-        {w > 0 && <>
-          <View style={[s.trackFill, { left: THUMB / 2, width: (idx / n) * trackW }]} />
-          {options.map((_, i) => (
-            <View key={i} style={[s.tick, { left: THUMB / 2 + (i / n) * trackW - 2 }]} />
-          ))}
-          <View style={[s.thumb, { left: (idx / n) * trackW }]} {...pan.panHandlers} hitSlop={HIT} />
         </>}
       </View>
     </View>
@@ -198,7 +144,6 @@ export default function SettingsScreen() {
   const [uid, setUid] = useState<string | null>(null);
   const [ageMin, setAgeMin] = useState(18);
   const [ageMax, setAgeMax] = useState(99);
-  const [dist, setDist] = useState(0);
   const [paused, setPaused] = useState(false);
   const [showActive, setShowActive] = useState(true);
   const [verified, setVerified] = useState(false);
@@ -224,7 +169,6 @@ export default function SettingsScreen() {
         if (prof) {
           setAgeMin(prof.pref_age_min ?? 18);
           setAgeMax(prof.pref_age_max ?? 99);
-          setDist(prof.pref_distance ?? 0);
           setPaused(!!prof.paused);
           setShowActive(prof.show_last_active ?? true);
           setVerified(!!prof.is_verified);
@@ -251,7 +195,7 @@ export default function SettingsScreen() {
     if (error) { Alert.alert("Couldn't send", error.message); return; }
     Alert.alert(
       won ? "⚡ You won a free Boost!" : "Thank you! 💜",
-      won ? "Your feedback earned you a Boost — use it from the deck."
+      won ? "Your feedback earned you a Boost — you'll be prioritised in the voice queue next time you talk."
           : "Your feedback helps us build a better Dosti Connect.");
   };
 
@@ -306,15 +250,17 @@ export default function SettingsScreen() {
           value={showActive} onChange={(v) => { setShowActive(v); savePref({ show_last_active: v }); }} />
       </Section>
 
-      <Section title="Dating preferences">
+      <Section title="Who I want to talk to">
         <View style={s.prefBlock}>
           <AgeRangeSlider lo={ageMin} hi={ageMax}
             onCommit={(lo, hi) => {
               setAgeMin(lo); setAgeMax(hi);
               savePref({ pref_age_min: lo, pref_age_max: hi });
             }} />
-          <SnapSlider label="Maximum distance" options={DISTANCES} value={dist}
-            onCommit={(v) => { setDist(v); savePref({ pref_distance: v }); }} />
+          <Text style={s.prefNote}>
+            We'll only connect you by voice with people in this age range. To choose
+            who can call you, your hours, and languages, open Call & safety below.
+          </Text>
         </View>
       </Section>
 
@@ -540,6 +486,7 @@ const s = StyleSheet.create({
   prefBlock: { paddingHorizontal: 20, paddingBottom: 16,
     borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.line },
   prefLabel: { color: theme.ink, fontSize: 14, fontFamily: theme.font.semibold, marginTop: 14, marginBottom: 8 },
+  prefNote: { color: theme.muted, fontSize: 12.5, lineHeight: 18, marginTop: 14 },
   sliderHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
   sliderVal: { color: theme.gold, fontSize: 14, fontFamily: theme.font.black, marginBottom: 8 },
   sliderWrap: { height: 44, justifyContent: "center" },
