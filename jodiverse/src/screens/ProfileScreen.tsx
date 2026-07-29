@@ -22,10 +22,20 @@ const TRAIT_LABEL: Record<string, string> = {
   concise: "⚡ Concise", engaged: "✅ Engaged",
 };
 
+const ageFrom = (birthdate?: string | null) => {
+  if (!birthdate) return null;
+  const b = new Date(birthdate); if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  let a = now.getFullYear() - b.getFullYear();
+  if (now < new Date(now.getFullYear(), b.getMonth(), b.getDate())) a--;
+  return a > 0 && a < 120 ? a : null;
+};
+
 export default function ProfileScreen() {
   const [name, setName] = useState("");
   const [bio, setBio] = useState("");
   const [city, setCity] = useState("");
+  const [age, setAge] = useState<number | null>(null);
   const [verified, setVerified] = useState(false);
   const [active, setActive] = useState(false);
   const [photos, setPhotos] = useState<OwnPhoto[]>([]);
@@ -45,10 +55,11 @@ export default function ProfileScreen() {
     if (!user) return;
     setUid(user.id);
     const { data } = await supabase.from("profiles")
-      .select("display_name, bio, city, video_path, audio_path, is_verified, is_active")
+      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active")
       .eq("id", user.id).maybeSingle();
     if (data) {
       setName(data.display_name); setBio(data.bio ?? ""); setCity(data.city ?? "");
+      setAge(ageFrom(data.birthdate));
       setVerified(data.is_verified); setActive(data.is_active);
       setHasVideo(!!data.video_path);
       setAudioUrl(data.audio_path ? await signMediaPath(data.audio_path) : null);
@@ -161,20 +172,81 @@ export default function ProfileScreen() {
     player.play();
   };
 
+  const preview = () => uid && nav.navigate("MatchProfile",
+    { otherId: uid, name: "Preview", self: true });
+
+  // Profile strength — nudges completion the way Hinge/Bumble do.
+  const checks: [boolean, string][] = [
+    [photos.length > 0, "Add a photo"],
+    [!!audioUrl, "Record a voice intro"],
+    [!!bio.trim(), "Write a short bio"],
+    [hasVideo, "Add an intro video"],
+    [!!city.trim(), "Add your city"],
+  ];
+  const done = checks.filter(([ok]) => ok).length;
+  const pct = Math.round((done / checks.length) * 100);
+  const nextTip = checks.find(([ok]) => !ok)?.[1] ?? null;
+  const mainPhoto = photos[0]?.url ?? null;
+
+  const topTraits = Object.entries(myTraits).filter(([k]) => TRAIT_LABEL[k])
+    .sort((a, b) => b[1] - a[1]).slice(0, 6);
+
   return (
-    <ScrollView style={s.wrap} contentContainerStyle={{ padding: 22, paddingTop: 64, paddingBottom: 40 }}>
-      <View style={s.titleRow}>
-        <Text style={s.title}>Profile</Text>
+    <ScrollView style={s.wrap} contentContainerStyle={{ paddingBottom: 44 }}>
+      {/* top bar */}
+      <View style={s.topBar}>
+        <Text style={s.title}>You</Text>
         <View style={s.titleActions}>
-          <TouchableOpacity style={s.iconBtn} disabled={!uid}
-            onPress={() => nav.navigate("MatchProfile",
-              { otherId: uid, name: "Preview", self: true })}>
-            <Ionicons name="eye-outline" size={22} color={theme.ink} />
+          <TouchableOpacity style={s.iconBtn} disabled={!uid} onPress={preview}>
+            <Ionicons name="eye-outline" size={21} color={theme.ink} />
           </TouchableOpacity>
           <TouchableOpacity style={s.iconBtn} onPress={() => nav.navigate("Settings")}>
-            <Ionicons name="settings-outline" size={22} color={theme.ink} />
+            <Ionicons name="settings-outline" size={21} color={theme.ink} />
           </TouchableOpacity>
         </View>
+      </View>
+
+      {/* HERO — this is how others see you. Tap to preview the full profile. */}
+      <TouchableOpacity activeOpacity={0.92} onPress={preview} style={s.hero}>
+        {mainPhoto ? (
+          <Image source={{ uri: mainPhoto }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+        ) : (
+          <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+            style={[StyleSheet.absoluteFill, s.heroEmpty]}>
+            <Text style={s.heroInitial}>{name?.[0]?.toUpperCase() ?? "?"}</Text>
+          </LinearGradient>
+        )}
+        <LinearGradient colors={["transparent", "rgba(8,10,18,0.85)"]}
+          style={s.heroScrim} pointerEvents="none">
+          <View style={s.heroNameRow}>
+            <Text style={s.heroName} numberOfLines={1}>
+              {name || "Your name"}{age ? `, ${age}` : ""}
+            </Text>
+            {verified && <Ionicons name="checkmark-circle" size={20} color="#6FA8C9" />}
+          </View>
+          {city ? <Text style={s.heroMeta}>📍 {city}</Text> : null}
+        </LinearGradient>
+        <View style={s.heroPill}>
+          <Ionicons name="eye-outline" size={13} color={theme.onGold} />
+          <Text style={s.heroPillText}>Preview</Text>
+        </View>
+      </TouchableOpacity>
+
+      {/* profile strength */}
+      <View style={s.strengthCard}>
+        <View style={s.strengthTop}>
+          <Text style={s.strengthLabel}>Profile strength</Text>
+          <Text style={s.strengthPct}>{pct}%</Text>
+        </View>
+        <View style={s.strengthTrack}>
+          <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={[s.strengthFill, { width: `${Math.max(pct, 4)}%` }]} />
+        </View>
+        {nextTip && (
+          <Text style={s.strengthTip}>
+            <Ionicons name="arrow-forward" size={12} color={theme.gold} /> {nextTip} to stand out
+          </Text>
+        )}
       </View>
 
       {!active && (
@@ -186,67 +258,10 @@ export default function ProfileScreen() {
           <Ionicons name="chevron-forward" size={18} color={theme.muted} />
         </TouchableOpacity>
       )}
-      {Object.keys(myTraits).filter((k) => TRAIT_LABEL[k]).length > 0 && (
-        <View style={s.insightCard}>
-          <Text style={s.insightLabel}>YOUR CONVERSATION STYLE</Text>
-          <View style={s.insightChips}>
-            {Object.entries(myTraits).filter(([k]) => TRAIT_LABEL[k])
-              .sort((a, b) => b[1] - a[1]).slice(0, 6).map(([k]) => (
-                <View key={k} style={s.insightChip}>
-                  <Text style={s.insightChipText}>{TRAIT_LABEL[k]}</Text>
-                </View>
-              ))}
-          </View>
-          <Text style={s.insightNote}>
-            Built from what people say after talking with you — never from how you sound.
-            Shown on your profile to people you match with.
-          </Text>
-        </View>
-      )}
-      {verified && (
-        <View style={[s.banner, { borderColor: "rgba(111,168,201,.4)" }]}>
-          <Ionicons name="checkmark-circle" size={20} color="#6FA8C9" />
-          <Text style={s.bannerText}>You're verified.</Text>
-        </View>
-      )}
 
-      <Text style={s.label}>Photos</Text>
-      <View style={s.grid}>
-        {photos.map((p) => (
-          <TouchableOpacity key={p.id} style={s.cell} onLongPress={() => removePhoto(p)}>
-            <Image source={{ uri: p.url }} style={s.cellImg} />
-          </TouchableOpacity>
-        ))}
-        {photos.length < 6 && (
-          <TouchableOpacity style={s.cell} onPress={addPhoto}>
-            <Text style={s.cellPlus}>＋</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-      <Text style={s.hint}>Long-press a photo to remove it.</Text>
-
-      <Text style={s.label}>Intro video ({VIDEO_MIN_S}–{VIDEO_MAX_S} sec)</Text>
-      {hasVideo ? (
-        <View style={s.mediaRow}>
-          <Ionicons name="videocam" size={20} color={theme.emerald} />
-          <Text style={s.mediaText}>Intro video on your profile</Text>
-          <TouchableOpacity onPress={addVideo} disabled={mediaBusy}>
-            <Text style={s.mediaAction}>Replace</Text>
-          </TouchableOpacity>
-          <TouchableOpacity onPress={dropVideo} disabled={mediaBusy}>
-            <Text style={[s.mediaAction, { color: theme.danger }]}>Remove</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <TouchableOpacity style={s.mediaAdd} onPress={addVideo} disabled={mediaBusy}>
-          <Ionicons name="videocam-outline" size={20} color={theme.muted} />
-          <Text style={s.mediaAddText}>
-            {mediaBusy ? "Uploading…" : `Add a ${VIDEO_MIN_S}–${VIDEO_MAX_S} sec video — profiles with video get more likes`}
-          </Text>
-        </TouchableOpacity>
-      )}
-
-      <Text style={s.label}>Voice intro (up to {AUDIO_MAX_S} sec)</Text>
+      {/* Voice intro — the hero of a voice-first profile */}
+      <SectionHeader icon="mic" title="Voice intro"
+        hint="Let them hear the real you — the first thing that stands out." />
       {recState.isRecording ? (
         <View style={s.mediaRow}>
           <View style={s.recDot} />
@@ -261,89 +276,240 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       ) : audioUrl ? (
-        <View style={s.mediaRow}>
-          <TouchableOpacity onPress={playVoice}>
-            <Ionicons name="play-circle" size={26} color={theme.rose} />
+        <View style={s.voiceCard}>
+          <TouchableOpacity onPress={playVoice} style={s.voicePlay}>
+            <Ionicons name="play" size={20} color={theme.onGold} />
           </TouchableOpacity>
-          <Text style={s.mediaText}>Voice intro on your profile</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={s.voiceTitle}>Your voice intro</Text>
+            <Text style={s.voiceSub}>Tap to listen · up to {AUDIO_MAX_S}s</Text>
+          </View>
           <TouchableOpacity onPress={startRec} disabled={mediaBusy}>
-            <Text style={s.mediaAction}>Re-record</Text>
+            <Text style={s.mediaAction}>Redo</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={dropAudio} disabled={mediaBusy}>
-            <Text style={[s.mediaAction, { color: theme.danger }]}>Remove</Text>
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
           </TouchableOpacity>
         </View>
       ) : (
         <TouchableOpacity style={s.mediaAdd} onPress={startRec} disabled={mediaBusy}>
-          <Ionicons name="mic-outline" size={20} color={theme.muted} />
+          <Ionicons name="mic-outline" size={20} color={theme.gold} />
           <Text style={s.mediaAddText}>
-            {mediaBusy ? "Uploading…" : "Record a voice intro — let them hear the real you"}
+            {mediaBusy ? "Uploading…" : "Record a voice intro"}
           </Text>
+          <Ionicons name="chevron-forward" size={16} color={theme.muted} />
         </TouchableOpacity>
       )}
 
-      <Text style={s.label}>Display name</Text>
-      <TextInput style={s.input} value={name} onChangeText={setName} maxLength={40}
-        placeholderTextColor={theme.muted} />
-      <Text style={s.label}>Bio</Text>
-      <TextInput style={[s.input, { height: 100, textAlignVertical: "top" }]} value={bio}
-        onChangeText={setBio} multiline maxLength={500} placeholderTextColor={theme.muted} />
-      <Text style={s.label}>City</Text>
-      <TextInput style={s.input} value={city} onChangeText={setCity} placeholderTextColor={theme.muted} />
+      {/* Photos */}
+      <SectionHeader icon="images" title="Photos"
+        hint="Shown after you match on a call. Long-press to remove." />
+      <View style={s.grid}>
+        {photos.map((p, i) => (
+          <TouchableOpacity key={p.id} style={s.cell} onLongPress={() => removePhoto(p)}>
+            <Image source={{ uri: p.url }} style={s.cellImg} />
+            {i === 0 && <View style={s.mainTag}><Text style={s.mainTagText}>MAIN</Text></View>}
+          </TouchableOpacity>
+        ))}
+        {photos.length < 6 && (
+          <TouchableOpacity style={[s.cell, s.cellAdd]} onPress={addPhoto}>
+            <Ionicons name="add" size={30} color={theme.gold} />
+          </TouchableOpacity>
+        )}
+      </View>
 
-      <TouchableOpacity onPress={save}>
-        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.btn}>
-          <Text style={{ color: "#fff", fontWeight: "700" }}>Save</Text>
+      {/* Intro video */}
+      <SectionHeader icon="videocam" title="Intro video"
+        hint={`A ${VIDEO_MIN_S}–${VIDEO_MAX_S} sec clip — profiles with video get more replies.`} />
+      {hasVideo ? (
+        <View style={s.mediaRow}>
+          <Ionicons name="videocam" size={20} color={theme.emerald} />
+          <Text style={s.mediaText}>Intro video on your profile</Text>
+          <TouchableOpacity onPress={addVideo} disabled={mediaBusy}>
+            <Text style={s.mediaAction}>Replace</Text>
+          </TouchableOpacity>
+          <TouchableOpacity onPress={dropVideo} disabled={mediaBusy}>
+            <Ionicons name="trash-outline" size={18} color={theme.danger} />
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <TouchableOpacity style={s.mediaAdd} onPress={addVideo} disabled={mediaBusy}>
+          <Ionicons name="videocam-outline" size={20} color={theme.gold} />
+          <Text style={s.mediaAddText}>{mediaBusy ? "Uploading…" : "Add an intro video"}</Text>
+          <Ionicons name="chevron-forward" size={16} color={theme.muted} />
+        </TouchableOpacity>
+      )}
+
+      {/* About you */}
+      <SectionHeader icon="document-text" title="About you"
+        hint="A line or two on who you are and what you're looking for." />
+      <TextInput style={s.bioInput} value={bio} onChangeText={setBio} multiline
+        maxLength={500} placeholder="Tell people what makes you, you…"
+        placeholderTextColor={theme.muted} />
+      <Text style={s.counter}>{bio.length}/500</Text>
+
+      {/* Basics */}
+      <SectionHeader icon="person" title="Basics" />
+      <View style={s.fieldCard}>
+        <Text style={s.fieldLabel}>Display name</Text>
+        <TextInput style={s.fieldInput} value={name} onChangeText={setName} maxLength={40}
+          placeholder="Your name" placeholderTextColor={theme.muted} />
+        <View style={s.fieldHair} />
+        <Text style={s.fieldLabel}>City</Text>
+        <TextInput style={s.fieldInput} value={city} onChangeText={setCity}
+          placeholder="Where you're based" placeholderTextColor={theme.muted} />
+      </View>
+
+      {/* Conversation style — earned from real calls */}
+      {topTraits.length > 0 && (
+        <>
+          <SectionHeader icon="sparkles" title="Your conversation style"
+            hint="Built from what people say after talking with you — never from how you sound." />
+          <View style={s.traitWrap}>
+            {topTraits.map(([k]) => (
+              <View key={k} style={s.traitChip}>
+                <Text style={s.traitChipText}>{TRAIT_LABEL[k]}</Text>
+              </View>
+            ))}
+          </View>
+        </>
+      )}
+
+      {verified && (
+        <View style={[s.banner, { borderColor: "rgba(111,168,201,.4)", marginTop: 24 }]}>
+          <Ionicons name="checkmark-circle" size={20} color="#6FA8C9" />
+          <Text style={s.bannerText}>You're verified.</Text>
+        </View>
+      )}
+
+      <TouchableOpacity onPress={save} style={{ marginTop: 26 }}>
+        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.saveBtn}>
+          <Ionicons name="checkmark" size={19} color="#fff" />
+          <Text style={s.saveText}>Save changes</Text>
         </LinearGradient>
       </TouchableOpacity>
       <TouchableOpacity style={s.ghost} onPress={() => supabase.auth.signOut()}>
-        <Text style={{ color: theme.muted, fontWeight: "600" }}>Sign out</Text>
+        <Text style={s.ghostText}>Sign out</Text>
       </TouchableOpacity>
     </ScrollView>
   );
 }
 
+function SectionHeader({ icon, title, hint }:
+  { icon: any; title: string; hint?: string }) {
+  return (
+    <View style={s.sectionHead}>
+      <View style={s.sectionTitleRow}>
+        <Ionicons name={icon} size={16} color={theme.gold} />
+        <Text style={s.sectionTitle}>{title}</Text>
+      </View>
+      {hint ? <Text style={s.sectionHint}>{hint}</Text> : null}
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg },
+  topBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 22, paddingTop: 64, paddingBottom: 14 },
   title: { fontSize: 30, fontFamily: theme.font.display, letterSpacing: -0.8, color: theme.ink },
-  titleRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    marginBottom: 16 },
   titleActions: { flexDirection: "row", gap: 10 },
   iconBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.card,
     borderWidth: 1, borderColor: theme.line, alignItems: "center", justifyContent: "center" },
+
+  // hero
+  hero: { height: 380, marginHorizontal: 22, borderRadius: theme.radii.xl, overflow: "hidden",
+    backgroundColor: theme.card, ...theme.shadow.floating },
+  heroEmpty: { alignItems: "center", justifyContent: "center" },
+  heroInitial: { color: "rgba(255,255,255,0.3)", fontSize: 130, fontFamily: theme.font.black },
+  heroScrim: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 20,
+    paddingTop: 40, paddingBottom: 18 },
+  heroNameRow: { flexDirection: "row", alignItems: "center", gap: 8 },
+  heroName: { color: "#fff", fontSize: 26, fontFamily: theme.font.display, letterSpacing: -0.6 },
+  heroMeta: { color: "rgba(255,255,255,0.85)", fontSize: 13.5, marginTop: 5, fontFamily: theme.font.semibold },
+  heroPill: { position: "absolute", top: 14, right: 14, flexDirection: "row", alignItems: "center",
+    gap: 5, backgroundColor: theme.gold, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7,
+    ...theme.shadow.cta },
+  heroPillText: { color: theme.onGold, fontSize: 12, fontFamily: theme.font.black },
+
+  // strength
+  strengthCard: { marginHorizontal: 22, marginTop: 16, backgroundColor: theme.card, borderWidth: 1,
+    borderColor: theme.line, borderRadius: theme.radii.lg, padding: 16, ...theme.shadow.card },
+  strengthTop: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  strengthLabel: { color: theme.ink, fontSize: 14, fontFamily: theme.font.bold },
+  strengthPct: { color: theme.gold, fontSize: 15, fontFamily: theme.font.black },
+  strengthTrack: { height: 8, borderRadius: 4, backgroundColor: theme.card2, overflow: "hidden",
+    marginTop: 10 },
+  strengthFill: { height: 8, borderRadius: 4 },
+  strengthTip: { color: theme.muted, fontSize: 12.5, marginTop: 10, fontFamily: theme.font.semibold },
+
   banner: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: theme.card,
     borderWidth: 1, borderColor: "rgba(236,72,153,.4)", borderRadius: theme.radii.md, padding: 13,
-    marginBottom: 18, ...theme.shadow.card },
+    marginHorizontal: 22, marginTop: 16, ...theme.shadow.card },
   bannerText: { color: theme.ink, fontSize: 13, flex: 1, lineHeight: 18 },
-  insightCard: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.lg, padding: 16, marginBottom: 18, ...theme.shadow.card },
-  insightLabel: { color: theme.gold, fontSize: 10, fontFamily: theme.font.black, letterSpacing: 1.3,
-    marginBottom: 10 },
-  insightChips: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  insightChip: { backgroundColor: theme.card2, borderRadius: 999, paddingHorizontal: 12,
-    paddingVertical: 6 },
-  insightChipText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.semibold },
-  insightNote: { color: theme.muted, fontSize: 11, marginTop: 10, lineHeight: 16 },
-  label: { fontSize: 12, fontFamily: theme.font.bold, color: theme.muted, marginBottom: 8, marginTop: 10,
-    textTransform: "uppercase", letterSpacing: 0.5 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+
+  // section headers
+  sectionHead: { paddingHorizontal: 22, marginTop: 28, marginBottom: 12 },
+  sectionTitleRow: { flexDirection: "row", alignItems: "center", gap: 7 },
+  sectionTitle: { color: theme.ink, fontSize: 17, fontFamily: theme.font.displayMd, letterSpacing: -0.3 },
+  sectionHint: { color: theme.muted, fontSize: 12.5, marginTop: 5, lineHeight: 17 },
+
+  // media rows
+  mediaRow: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.md, padding: 14,
+    marginHorizontal: 22, ...theme.shadow.card },
+  mediaText: { color: theme.ink, fontSize: 13.5, flex: 1, fontFamily: theme.font.semibold },
+  mediaAction: { color: theme.purple, fontSize: 13, fontFamily: theme.font.bold, paddingHorizontal: 2 },
+  mediaAdd: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: theme.line, borderStyle: "dashed", borderRadius: theme.radii.md,
+    padding: 15, marginHorizontal: 22 },
+  mediaAddText: { color: theme.ink, fontSize: 14, flex: 1, fontFamily: theme.font.semibold },
+  recDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: theme.danger },
+
+  // voice card
+  voiceCard: { flexDirection: "row", alignItems: "center", gap: 13, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.md, padding: 14,
+    marginHorizontal: 22, ...theme.shadow.card },
+  voicePlay: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center",
+    backgroundColor: theme.gold, ...theme.shadow.cta },
+  voiceTitle: { color: theme.ink, fontSize: 14.5, fontFamily: theme.font.bold },
+  voiceSub: { color: theme.muted, fontSize: 12, marginTop: 2 },
+
+  // photos
+  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, paddingHorizontal: 22 },
   cell: { width: "31%", aspectRatio: 3 / 4, borderRadius: theme.radii.md, backgroundColor: theme.card,
     borderWidth: 1, borderColor: theme.line, alignItems: "center", justifyContent: "center",
     overflow: "hidden" },
+  cellAdd: { borderStyle: "dashed", borderColor: theme.gold },
   cellImg: { ...StyleSheet.absoluteFillObject },
-  cellPlus: { color: theme.muted, fontSize: 30 },
-  hint: { color: theme.muted, fontSize: 11, marginTop: 8, marginBottom: 6 },
-  input: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.md, padding: 13, fontSize: 15, color: theme.ink, marginBottom: 8 },
-  mediaRow: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: theme.card,
-    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.md, padding: 12, marginBottom: 8 },
-  mediaText: { color: theme.ink, fontSize: 13, flex: 1 },
-  mediaAction: { color: theme.purple, fontSize: 13, fontFamily: theme.font.bold, paddingHorizontal: 4 },
-  mediaAdd: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: theme.card,
-    borderWidth: 1, borderColor: theme.line, borderStyle: "dashed", borderRadius: theme.radii.md,
-    padding: 12, marginBottom: 8 },
-  mediaAddText: { color: theme.muted, fontSize: 13, flex: 1, lineHeight: 18 },
-  recDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: theme.danger },
-  btn: { borderRadius: 999, padding: 16, alignItems: "center", marginTop: 14, ...theme.shadow.cta },
-  ghost: { alignItems: "center", padding: 14, marginTop: 8 },
+  mainTag: { position: "absolute", left: 6, bottom: 6, backgroundColor: "rgba(8,10,18,0.72)",
+    borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
+  mainTagText: { color: "#fff", fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.6 },
+
+  // bio
+  bioInput: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.md, padding: 14, fontSize: 15, color: theme.ink, marginHorizontal: 22,
+    minHeight: 96, textAlignVertical: "top", lineHeight: 21 },
+  counter: { color: theme.muted, fontSize: 11, textAlign: "right", marginRight: 22, marginTop: 6 },
+
+  // basics
+  fieldCard: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.md, paddingHorizontal: 14, paddingVertical: 6, marginHorizontal: 22,
+    ...theme.shadow.card },
+  fieldLabel: { color: theme.muted, fontSize: 11, fontFamily: theme.font.bold, letterSpacing: 0.5,
+    textTransform: "uppercase", marginTop: 10 },
+  fieldInput: { color: theme.ink, fontSize: 15.5, paddingVertical: 8, fontFamily: theme.font.semibold },
+  fieldHair: { height: StyleSheet.hairlineWidth, backgroundColor: theme.line, marginVertical: 4 },
+
+  // traits
+  traitWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 22 },
+  traitChip: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
+    borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
+  traitChipText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.semibold },
+
+  saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    borderRadius: theme.radii.pill, paddingVertical: 17, marginHorizontal: 22, ...theme.shadow.cta },
+  saveText: { color: "#fff", fontFamily: theme.font.black, fontSize: 16 },
+  ghost: { alignItems: "center", padding: 16, marginTop: 4 },
+  ghostText: { color: theme.muted, fontFamily: theme.font.bold, fontSize: 14 },
 });
