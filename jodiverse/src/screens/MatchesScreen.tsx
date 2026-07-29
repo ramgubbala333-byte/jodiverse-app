@@ -103,15 +103,17 @@ export default function MatchesScreen() {
 
   return (
     <View style={s.wrap}>
-      <Text style={s.title}>Matches</Text>
-      <Text style={s.sub}>People you both wanted to keep talking to.</Text>
+      <Text style={s.title}>Your connections</Text>
+      <Text style={s.sub}>Photos stay hidden until you both choose to reveal them.</Text>
 
       <Animated.View style={{ flex: 1, opacity: listIn,
         transform: [{ translateY: listIn.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
       <FlatList
         data={matches}
         keyExtractor={(m) => m.id}
-        contentContainerStyle={{ paddingBottom: 24 }}
+        numColumns={2}
+        columnWrapperStyle={{ gap: 14 }}
+        contentContainerStyle={{ paddingBottom: 24, gap: 14 }}
         refreshing={loading}
         onRefresh={() => {}}
         ListEmptyComponent={!loading ? (
@@ -123,28 +125,32 @@ export default function MatchesScreen() {
           </View>
         ) : null}
         renderItem={({ item }) => (
-          // Sibling touchables (never nested): photo → profile, name → chat.
-          <View style={s.row}>
-            <TouchableOpacity onPress={() => openProfile(item)} onLongPress={() => onLongPress(item)}>
+          <PressableScale style={s.card} haptics="light"
+            onPress={() => openProfile(item)} onLongPress={() => onLongPress(item)}>
+            <View style={s.cardMedia}>
               {item.revealed && item.photo ? (
-                <Image source={{ uri: item.photo }} style={s.avatar} />
+                <>
+                  <Image source={{ uri: item.photo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+                  <View style={s.revealedPill}>
+                    <Ionicons name="checkmark-circle" size={11} color={theme.emerald} />
+                    <Text style={s.revealedText}>REVEALED</Text>
+                  </View>
+                </>
               ) : (
-                <View style={[s.avatar, s.avatarLocked]}>
-                  <Ionicons name={item.revealed ? "person" : "lock-closed"} size={20} color={theme.muted} />
+                <View style={s.lockCircle}>
+                  <Ionicons name="lock-closed" size={22} color={theme.muted} />
                 </View>
               )}
-            </TouchableOpacity>
-            <TouchableOpacity style={{ flex: 1 }} onPress={() => openChat(item)}
-              onLongPress={() => onLongPress(item)}>
-              <Text style={s.name}>{item.name}{item.age ? `, ${item.age}` : ""}</Text>
-              <Text style={s.meta}>
-                {item.revealed ? "Photos revealed" : "Photos locked — reveal to unlock"}
+            </View>
+            <Text style={s.name} numberOfLines={1}>{item.name}{item.age ? `, ${item.age}` : ""}</Text>
+            <View style={s.metaRow}>
+              <Ionicons name={item.revealed ? "chatbubble-outline" : "mic-outline"}
+                size={12} color={theme.gold} />
+              <Text style={s.meta} numberOfLines={1}>
+                {item.revealed ? "Tap to chat" : "Tap to view"}
               </Text>
-            </TouchableOpacity>
-            <PressableScale style={s.chatBtn} haptics={false} onPress={() => openChat(item)}>
-              <Ionicons name="chatbubble" size={17} color={theme.gold} />
-            </PressableScale>
-          </View>
+            </View>
+          </PressableScale>
         )}
       />
       </Animated.View>
@@ -156,15 +162,18 @@ const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg, padding: 20, paddingTop: 64 },
   title: { fontSize: 30, fontFamily: theme.font.display, letterSpacing: -0.8, color: theme.ink },
   sub: { color: theme.muted, fontSize: 13.5, marginTop: 8, marginBottom: 18 },
-  row: { flexDirection: "row", alignItems: "center", paddingVertical: 12, gap: 12,
-    borderBottomWidth: 1, borderBottomColor: theme.line },
-  avatar: { width: 54, height: 54, borderRadius: 27 },
-  avatarLocked: { backgroundColor: theme.card2, alignItems: "center", justifyContent: "center",
-    borderWidth: 1, borderColor: theme.line },
-  name: { fontSize: 16, fontFamily: theme.font.bold, color: theme.ink },
-  meta: { fontSize: 12.5, color: theme.muted, marginTop: 3 },
-  chatBtn: { width: 38, height: 38, borderRadius: 19, backgroundColor: theme.goldSoft,
+  card: { flex: 1, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, padding: 10, ...theme.shadow.card },
+  cardMedia: { aspectRatio: 3 / 4, borderRadius: theme.radii.md, backgroundColor: theme.card2,
+    overflow: "hidden", alignItems: "center", justifyContent: "center", marginBottom: 10 },
+  lockCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.05)",
     alignItems: "center", justifyContent: "center" },
+  revealedPill: { position: "absolute", top: 8, left: 8, flexDirection: "row", alignItems: "center",
+    gap: 4, backgroundColor: "rgba(8,10,18,0.7)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
+  revealedText: { color: theme.emerald, fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  name: { fontSize: 15.5, fontFamily: theme.font.bold, color: theme.ink, paddingHorizontal: 2 },
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4, paddingHorizontal: 2 },
+  meta: { fontSize: 12, color: theme.muted, flex: 1 },
   empty: { alignItems: "center", marginTop: 60, paddingHorizontal: 30, gap: 12 },
   emptyText: { color: theme.muted, fontSize: 14, textAlign: "center", lineHeight: 20 },
 });

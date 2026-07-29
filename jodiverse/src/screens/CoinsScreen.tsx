@@ -74,19 +74,25 @@ export default function CoinsScreen() {
 
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ padding: 22, paddingBottom: 40 + insets.bottom }}>
-      <PressableScale style={s.balanceCard} onPress={() => nav.navigate("Transactions")}>
-        <Ionicons name="logo-bitcoin" size={26} color={theme.gold} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.balanceLabel}>You have</Text>
-          <Text style={s.balanceVal}>
-            {balance == null ? "…" : balance.toLocaleString()} <Text style={s.balanceSub}>coins</Text>
-          </Text>
+      <View style={s.balanceCard}>
+        <Text style={s.balanceLabel}>AVAILABLE BALANCE</Text>
+        <View style={s.balanceValRow}>
+          <Ionicons name="logo-bitcoin" size={28} color={theme.gold} />
+          <Text style={s.balanceVal}>{balance == null ? "…" : balance.toLocaleString()}</Text>
         </View>
-        <View style={{ alignItems: "center", flexDirection: "row", gap: 2 }}>
-          <Text style={s.histLink}>History</Text>
-          <Ionicons name="chevron-forward" size={16} color={theme.muted} />
-        </View>
-      </PressableScale>
+        <PressableScale style={s.histPill} onPress={() => nav.navigate("Transactions")}>
+          <Text style={s.histLink}>View history</Text>
+          <Ionicons name="chevron-forward" size={14} color={theme.muted} />
+        </PressableScale>
+      </View>
+
+      {/* what coins are (and aren't) — the fair-model reassurance */}
+      <View style={s.infoBanner}>
+        <Ionicons name="information-circle-outline" size={18} color={theme.rose} />
+        <Text style={s.infoBannerText}>
+          Coins are just for gifts and fun — they never buy call time, messages or matching.
+        </Text>
+      </View>
 
       {/* redeem a promo / coupon code */}
       <View style={s.promoCard}>
@@ -109,27 +115,26 @@ export default function CoinsScreen() {
         <Ionicons name="chevron-forward" size={18} color={theme.muted} />
       </PressableScale>
 
-      <Text style={s.h1}>Get coins</Text>
-      <Text style={s.sub}>
-        Coins are just for fun — gifts, boosts, and profile extras. They never buy
-        call time, messages, or matching: talking on Dosti Connect is always free.
-      </Text>
-
-      {PACKS.map((p) => (
-        <PressableScale key={p.coins} style={[s.pack, p.best && s.packBest]}
-          onPress={() => buy(p)} disabled={busy !== null}>
-          <View style={s.packLeft}>
-            <Text style={s.packCoins}>{p.coins.toLocaleString()} coins</Text>
-            {p.bonus && <Text style={s.packBonus}>{p.bonus}</Text>}
-          </View>
-          {p.best && <View style={s.bestTag}><Text style={s.bestTagText}>BEST VALUE</Text></View>}
-          <View style={s.packRight}>
-            {busy === p.coins
-              ? <ActivityIndicator color={theme.onGold} />
-              : <Text style={s.packPrice}>₹{p.price}</Text>}
-          </View>
-        </PressableScale>
-      ))}
+      <Text style={s.h1}>Refill wallet</Text>
+      <View style={s.packGrid}>
+        {PACKS.map((p, i) => {
+          const icon = (["server", "medal", "diamond", "ribbon"] as const)[i] ?? "server";
+          return (
+            <PressableScale key={p.coins} style={[s.pack, p.best && s.packBest]}
+              onPress={() => buy(p)} disabled={busy !== null}>
+              {p.best && <View style={s.bestTag}><Text style={s.bestTagText}>MOST POPULAR</Text></View>}
+              <Ionicons name={icon} size={26} color={theme.gold} />
+              <Text style={s.packCoins}>{p.coins.toLocaleString()}</Text>
+              <Text style={s.packCoinsLabel}>Coins{p.bonus ? ` · ${p.bonus}` : ""}</Text>
+              <View style={[s.pricePill, p.best && s.pricePillBest]}>
+                {busy === p.coins
+                  ? <ActivityIndicator color={p.best ? theme.onGold : theme.gold} />
+                  : <Text style={[s.packPrice, p.best && { color: theme.onGold }]}>₹{p.price}</Text>}
+              </View>
+            </PressableScale>
+          );
+        })}
+      </View>
 
       <View style={s.spendCard}>
         <Text style={s.spendLabel}>WHAT COINS ARE FOR</Text>
@@ -159,13 +164,24 @@ export default function CoinsScreen() {
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg },
-  balanceCard: { flexDirection: "row", alignItems: "center", gap: 14,
-    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.lg, padding: 18, marginTop: 8, ...theme.shadow.card },
-  balanceLabel: { color: theme.muted, fontSize: 12, fontFamily: theme.font.semibold },
+  balanceCard: { alignItems: "center", backgroundColor: theme.card, borderWidth: 1,
+    borderColor: theme.line, borderRadius: theme.radii.xl, paddingVertical: 26, paddingHorizontal: 18,
+    marginTop: 8, ...theme.shadow.card },
+  balanceLabel: { color: theme.muted, fontSize: 12, fontFamily: theme.font.bold, letterSpacing: 1.5 },
+  balanceValRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 12 },
+  balanceVal: { color: theme.ink, fontSize: 44, fontFamily: theme.font.black, letterSpacing: -1 },
+  histPill: { flexDirection: "row", alignItems: "center", gap: 4, marginTop: 14,
+    backgroundColor: theme.card2, borderRadius: theme.radii.pill, paddingHorizontal: 14, paddingVertical: 7 },
   histLink: { color: theme.muted, fontSize: 12.5, fontFamily: theme.font.bold },
-  balanceVal: { color: theme.ink, fontSize: 26, fontFamily: theme.font.black, marginTop: 2 },
-  balanceSub: { color: theme.muted, fontSize: 13, fontFamily: theme.font.medium },
+  infoBanner: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 16,
+    backgroundColor: "rgba(255,75,137,0.08)", borderWidth: 1, borderColor: "rgba(255,75,137,0.25)",
+    borderRadius: theme.radii.md, padding: 13 },
+  infoBannerText: { color: theme.ink, fontSize: 12.5, flex: 1, lineHeight: 18 },
+  packGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12 },
+  packCoinsLabel: { color: theme.muted, fontSize: 12, fontFamily: theme.font.semibold, marginTop: 2 },
+  pricePill: { backgroundColor: theme.card2, borderRadius: theme.radii.md, paddingVertical: 10,
+    paddingHorizontal: 18, marginTop: 12, minWidth: 90, alignItems: "center" },
+  pricePillBest: { backgroundColor: theme.gold },
   promoCard: { flexDirection: "row", gap: 10, marginTop: 16 },
   promoInput: { flex: 1, backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
     borderRadius: theme.radii.md, paddingHorizontal: 14, paddingVertical: 13, color: theme.ink, fontSize: 15 },
@@ -180,18 +196,15 @@ const s = StyleSheet.create({
   h1: { color: theme.ink, fontSize: 27, fontFamily: theme.font.display, marginTop: 28,
     letterSpacing: -0.8 },
   sub: { color: theme.muted, fontSize: 14, marginTop: 10, lineHeight: 20, marginBottom: 18 },
-  pack: { flexDirection: "row", alignItems: "center", backgroundColor: theme.card,
-    borderWidth: 1.5, borderColor: theme.line, borderRadius: theme.radii.lg, padding: 18,
-    marginBottom: 12, ...theme.shadow.card },
+  pack: { width: "47.5%", alignItems: "center", backgroundColor: theme.card,
+    borderWidth: 1.5, borderColor: theme.line, borderRadius: theme.radii.lg, paddingVertical: 22,
+    paddingHorizontal: 10, marginBottom: 12, ...theme.shadow.card },
   packBest: { borderColor: theme.gold },
-  packLeft: { flex: 1 },
-  packCoins: { color: theme.ink, fontSize: 18, fontFamily: theme.font.black },
-  packBonus: { color: theme.emerald, fontSize: 12, marginTop: 3, fontFamily: theme.font.bold },
-  bestTag: { backgroundColor: theme.goldSoft, borderRadius: 6, paddingHorizontal: 8,
-    paddingVertical: 3, marginRight: 12 },
-  bestTagText: { color: theme.gold, fontSize: 9, fontFamily: theme.font.black, letterSpacing: 0.5 },
-  packRight: { minWidth: 64, alignItems: "flex-end" },
-  packPrice: { color: theme.gold, fontSize: 20, fontFamily: theme.font.black },
+  packCoins: { color: theme.ink, fontSize: 20, fontFamily: theme.font.black, marginTop: 10 },
+  bestTag: { position: "absolute", top: -9, backgroundColor: theme.gold, borderRadius: 999,
+    paddingHorizontal: 10, paddingVertical: 3 },
+  bestTagText: { color: theme.onGold, fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  packPrice: { color: theme.gold, fontSize: 17, fontFamily: theme.font.black },
   spendCard: { backgroundColor: theme.card2, borderRadius: theme.radii.md, padding: 16, marginTop: 10 },
   spendLabel: { color: theme.gold, fontSize: 10, fontFamily: theme.font.black, letterSpacing: 1.2,
     marginBottom: 10 },
