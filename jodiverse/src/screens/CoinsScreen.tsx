@@ -74,15 +74,19 @@ export default function CoinsScreen() {
 
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ padding: 22, paddingBottom: 40 + insets.bottom }}>
-      <View style={s.balanceCard}>
+      <PressableScale style={s.balanceCard} onPress={() => nav.navigate("Transactions")}>
         <Ionicons name="logo-bitcoin" size={26} color={theme.gold} />
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={s.balanceLabel}>You have</Text>
           <Text style={s.balanceVal}>
             {balance == null ? "…" : balance.toLocaleString()} <Text style={s.balanceSub}>coins</Text>
           </Text>
         </View>
-      </View>
+        <View style={{ alignItems: "center", flexDirection: "row", gap: 2 }}>
+          <Text style={s.histLink}>History</Text>
+          <Ionicons name="chevron-forward" size={16} color={theme.muted} />
+        </View>
+      </PressableScale>
 
       {/* redeem a promo / coupon code */}
       <View style={s.promoCard}>
@@ -159,6 +163,7 @@ const s = StyleSheet.create({
     backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
     borderRadius: theme.radii.lg, padding: 18, marginTop: 8, ...theme.shadow.card },
   balanceLabel: { color: theme.muted, fontSize: 12, fontFamily: theme.font.semibold },
+  histLink: { color: theme.muted, fontSize: 12.5, fontFamily: theme.font.bold },
   balanceVal: { color: theme.ink, fontSize: 26, fontFamily: theme.font.black, marginTop: 2 },
   balanceSub: { color: theme.muted, fontSize: 13, fontFamily: theme.font.medium },
   promoCard: { flexDirection: "row", gap: 10, marginTop: 16 },

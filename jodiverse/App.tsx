@@ -25,6 +25,7 @@ import MatchedScreen from "./src/screens/MatchedScreen";
 import VoiceProfileScreen from "./src/screens/VoiceProfileScreen";
 import CoinsScreen from "./src/screens/CoinsScreen";
 import ReferralScreen from "./src/screens/ReferralScreen";
+import TransactionsScreen from "./src/screens/TransactionsScreen";
 import LoungesScreen from "./src/screens/LoungesScreen";
 import LoungeRoomScreen from "./src/screens/LoungeRoomScreen";
 import CallSettingsScreen from "./src/screens/CallSettingsScreen";
@@ -226,6 +227,9 @@ export default function App() {
                 headerStyle: { backgroundColor: theme.card }, presentation: "modal" }} />
             <Stack.Screen name="Referral" component={ReferralScreen}
               options={{ headerShown: true, title: "Invite & earn", headerTintColor: theme.ink,
+                headerStyle: { backgroundColor: theme.card } }} />
+            <Stack.Screen name="Transactions" component={TransactionsScreen}
+              options={{ headerShown: true, title: "Coin history", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="LoungeRoom" component={LoungeRoomScreen}
               options={{ gestureEnabled: true, animation: "slide_from_bottom" }} />
