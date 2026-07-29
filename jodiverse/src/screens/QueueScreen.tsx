@@ -3,12 +3,12 @@ import {
   View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Animated, Easing,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
 import { INTEREST_GROUPS, withEmoji } from "../lib/interests";
 import GlowBackdrop from "../components/GlowBackdrop";
-import GlassCard from "../components/GlassCard";
 import PressableScale from "../components/PressableScale";
 import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
@@ -16,6 +16,7 @@ import { theme } from "../theme";
 type Predicate = { label: string; matches: number };
 const POLL_MS = 2500;      // matchmaker tick
 const FALLBACK_AFTER = 30; // seconds before we stop making people wait
+const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
 
 type CallStatus = { used: number; cap: number; remaining: number; subscribed: boolean };
 type Pick = { id: string; name: string; age: number | null; city: string | null;
@@ -25,6 +26,7 @@ type Pick = { id: string; name: string; age: number | null; city: string | null;
 // narrates what it's looking for instead of showing a spinner.
 export default function QueueScreen() {
   const nav = useNavigation<any>();
+  const insets = useSafeAreaInsets();
   const [myInterests, setMyInterests] = useState<string[]>([]);
   const [picked, setPicked] = useState<string[]>([]);
   const [status, setStatus] = useState<CallStatus>({ used: 0, cap: 3, remaining: 3, subscribed: false });
@@ -34,9 +36,24 @@ export default function QueueScreen() {
   const [waited, setWaited] = useState(0);
   const [busy, setBusy] = useState(false);
   const [showTopics, setShowTopics] = useState(false); // topic picker is opt-in, not a form
+  const [coins, setCoins] = useState<number | null>(null);
+  const [initial, setInitial] = useState("");
   const timers = useRef<ReturnType<typeof setInterval>[]>([]);
   const fade = useRef(new Animated.Value(0)).current;
   const picksIn = useRef(new Animated.Value(0)).current;   // P2 section entrance
+  const micPulse = useRef(new Animated.Value(1)).current;  // breathing hero mic
+
+  // Hero mic breathes while idle — the app's signature motion.
+  useEffect(() => {
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(micPulse, { toValue: 1.09, duration: 1500,
+        easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      Animated.timing(micPulse, { toValue: 1, duration: 1500,
+        easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+    ]));
+    loop.start();
+    return () => loop.stop();
+  }, [micPulse]);
 
   const clearTimers = () => { timers.current.forEach(clearInterval); timers.current = []; };
 
@@ -44,14 +61,17 @@ export default function QueueScreen() {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const [{ data: prof }, { data: st }, { data: pk }] = await Promise.all([
-        supabase.from("profiles").select("interests").eq("id", user.id).maybeSingle(),
+      const [{ data: prof }, { data: st }, { data: pk }, { data: bal }] = await Promise.all([
+        supabase.from("profiles").select("interests, display_name").eq("id", user.id).maybeSingle(),
         supabase.rpc("my_call_status"),
         supabase.rpc("daily_picks"),
+        supabase.rpc("my_coin_balance"),
       ]);
       const ints = prof?.interests ?? [];
       setMyInterests(ints);
       setPicked((p) => (p.length ? p : ints.slice(0, 3)));
+      setInitial((prof?.display_name?.[0] ?? "").toUpperCase());
+      setCoins(bal ?? 0);
       if (st) setStatus(st as CallStatus);
       if (pk && (pk as Pick[]).length) {
         setPicks(pk as Pick[]);
@@ -203,112 +223,131 @@ export default function QueueScreen() {
 
   // ── intent view ─────────────────────────────────────────────────────────
   const suggested = myInterests.length ? myInterests : INTEREST_GROUPS[0].items.map((i) => i.label);
+  const outOfCalls = status.remaining <= 0 && !status.subscribed;
   return (
     <View style={s.wrap}>
       <GlowBackdrop />
-      <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 40 }}>
-      <Text style={s.h1}>Talk to someone new</Text>
-      <Text style={s.h1sub}>
-        No photos, no swiping. Just tap the button — we'll connect you with
-        someone to talk to in seconds.
-      </Text>
 
-      {/* daily call count — talking is always free, this just shows today's tally */}
-      <PressableScale onPress={() => !status.subscribed && nav.navigate("Paywall")}
-        haptics={status.subscribed ? false : "light"} style={{ marginTop: 24 }}>
-        <GlassCard style={[s.timeCard, status.remaining <= 0 && s.timeCardEmpty]}>
-          <Ionicons name="mic-circle-outline" size={22}
-            color={status.remaining <= 0 ? theme.danger : theme.gold} />
-          <View style={{ flex: 1 }}>
-            <Text style={s.timeVal}>
-              {status.subscribed
-                ? `${status.remaining} calls left today · unlimited plan`
-                : status.remaining <= 0
-                  ? "Out of free calls for today"
-                  : `${status.remaining} of ${status.cap} free calls left today`}
-            </Text>
-            <Text style={s.timeSub}>
-              {status.remaining <= 0 ? "Resets tomorrow — or go unlimited with Plus"
-                : "Talking is always free · resets daily · 10 min max per call"}
-            </Text>
-          </View>
-          {!status.subscribed && <Text style={s.timeAdd}>Plus →</Text>}
-        </GlassCard>
-      </PressableScale>
-
-      {/* P2 · Today's picks — who you'd click with, and why (metadata-only) */}
-      {picks.length > 0 && (
-        <Animated.View style={{
-          opacity: picksIn,
-          transform: [{ translateY: picksIn.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
-        }}>
-          <Text style={s.picksTitle}>Today's picks</Text>
-          <Text style={s.picksSub}>People we think you'll click with — tap one to tune your search.</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingVertical: 4, paddingRight: 6 }}>
-            {picks.map((pk) => (
-              <PressableScale key={pk.id} style={s.pickCard} haptics="light" onPress={() => tuneToPick(pk)}>
-                <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={s.pickAvatar}>
-                  <Text style={s.pickInitial}>{pk.name?.[0]?.toUpperCase() ?? "?"}</Text>
-                </LinearGradient>
-                <Text style={s.pickName} numberOfLines={1}>
-                  {pk.name}{pk.age ? `, ${pk.age}` : ""}
-                </Text>
-                {pk.city ? <Text style={s.pickCity} numberOfLines={1}>{pk.city}</Text> : null}
-                <Text style={s.pickReason} numberOfLines={3}>{pk.reason}</Text>
-                <View style={s.pickCta}>
-                  <Ionicons name="sparkles" size={12} color={theme.gold} />
-                  <Text style={s.pickCtaText}>Find people like this</Text>
-                </View>
-              </PressableScale>
-            ))}
-          </ScrollView>
-        </Animated.View>
-      )}
-
-      {/* THE action — one tap, always ready. No form to fill first. */}
-      <PressableScale onPress={joinQueue} disabled={busy}
-        haptics={false} style={{ marginTop: 36 }}>
-        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={s.cta}>
-          <Ionicons name="mic" size={19} color={theme.onGold} />
-          <Text style={s.ctaText}>
-            {status.remaining <= 0 && !status.subscribed ? "See Plus to keep talking" : "Start talking"}
-          </Text>
-        </LinearGradient>
-      </PressableScale>
-      <Text style={s.quota}>We'll connect you with someone instantly · 10 min max per call</Text>
-
-      {/* Topics are OPTIONAL — collapsed so the screen never feels like a form.
-          Empty = meet anyone; picking some just biases who we find. */}
-      <TouchableOpacity style={s.refineRow} onPress={() => setShowTopics((v) => !v)} activeOpacity={0.7}>
-        <Ionicons name="options-outline" size={16} color={theme.gold} />
-        <Text style={s.refineText}>
-          {picked.length
-            ? `Looking for people into ${picked.length} topic${picked.length > 1 ? "s" : ""}`
-            : "Want to talk about something specific? (optional)"}
-        </Text>
-        <Ionicons name={showTopics ? "chevron-up" : "chevron-down"} size={16} color={theme.muted} />
-      </TouchableOpacity>
-      {showTopics && (
-        <View style={{ marginTop: 12 }}>
-          <Text style={s.labelHint}>
-            Pick up to 5 — we'll prefer people who share them. Leave it empty to meet anyone.
-          </Text>
-          <View style={s.chipWrap}>
-            {suggested.map((i) => (
-              <TouchableOpacity key={i} onPress={() => toggle(i)}
-                style={[s.chip, picked.includes(i) && s.chipOn]}>
-                <Text style={[s.chipText, picked.includes(i) && s.chipTextOn]}>{withEmoji(i)}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <TouchableOpacity onPress={() => nav.navigate("Tabs", { screen: "Profile" })}>
-            <Text style={s.editLink}>Edit my interests →</Text>
+      {/* top app bar — wordmark, coins, avatar */}
+      <View style={[s.appBar, { paddingTop: insets.top + 8 }]}>
+        <Text style={s.brand}>{WORDMARK}</Text>
+        <View style={s.appBarRight}>
+          <TouchableOpacity style={s.coinPill} onPress={() => nav.navigate("Coins")}>
+            <Ionicons name="logo-bitcoin" size={15} color={theme.gold} />
+            <Text style={s.coinText}>{coins == null ? "—" : coins.toLocaleString()}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={s.avatarBtn}
+            onPress={() => nav.navigate("Tabs", { screen: "Profile" })}>
+            <Text style={s.avatarInitial}>{initial || "?"}</Text>
           </TouchableOpacity>
         </View>
-      )}
+      </View>
+
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}>
+        <Text style={s.h1}>Talk to someone new</Text>
+        <Text style={s.h1sub}>No photos, no swiping — tap and we'll connect you in seconds.</Text>
+
+        {/* HERO MIC — the signature interaction. Tap = join the voice queue. */}
+        <View style={s.micWrap}>
+          <View style={[s.ring, s.ringOuter]} pointerEvents="none" />
+          <View style={[s.ring, s.ringInner]} pointerEvents="none" />
+          <Animated.View pointerEvents="none"
+            style={[s.micGlow, { transform: [{ scale: micPulse }] }]} />
+          <PressableScale onPress={joinQueue} disabled={busy} haptics="medium">
+            <Animated.View style={{ transform: [{ scale: micPulse }] }}>
+              <LinearGradient colors={[...theme.grad]} start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }}
+                style={s.mic}>
+                <Ionicons name="mic" size={58} color="#fff" />
+              </LinearGradient>
+            </Animated.View>
+          </PressableScale>
+        </View>
+        <Text style={s.micHint}>{busy ? "Connecting…" : "Tap to start talking"}</Text>
+
+        {/* daily call count — talking is always free, this just shows today's tally */}
+        <PressableScale onPress={() => !status.subscribed && nav.navigate("Paywall")}
+          haptics={status.subscribed ? false : "light"} style={{ marginTop: 26 }}>
+          <View style={[s.activityCard, outOfCalls && { borderColor: theme.danger }]}>
+            <View style={s.activityIcon}>
+              <Ionicons name="mic-circle" size={22} color={outOfCalls ? theme.danger : theme.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.activityTitle}>
+                {status.subscribed
+                  ? `${status.remaining} calls left today · unlimited plan`
+                  : outOfCalls
+                    ? "Out of free calls for today"
+                    : `${status.remaining} of ${status.cap} free calls left today`}
+              </Text>
+              <Text style={s.activitySub}>
+                {outOfCalls ? "Resets tomorrow — or go unlimited with Plus"
+                  : "Talking is always free · 10 min max per call"}
+              </Text>
+            </View>
+            {!status.subscribed && <Ionicons name="chevron-forward" size={18} color={theme.muted} />}
+          </View>
+        </PressableScale>
+
+        {/* Today's picks — 2-col glass grid (metadata only, no photos) */}
+        {picks.length > 0 && (
+          <Animated.View style={{
+            marginTop: 30, opacity: picksIn,
+            transform: [{ translateY: picksIn.interpolate({ inputRange: [0, 1], outputRange: [16, 0] }) }],
+          }}>
+            <Text style={s.picksTitle}>Today's picks</Text>
+            <Text style={s.picksSub}>People we think you'll click with — tap one to tune your search.</Text>
+            <View style={s.picksGrid}>
+              {picks.slice(0, 4).map((pk) => (
+                <PressableScale key={pk.id} style={s.pickCard} haptics="light" onPress={() => tuneToPick(pk)}>
+                  <View style={s.pickRing}>
+                    <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                      style={s.pickRingGrad}>
+                      <View style={s.pickAvatarInner}>
+                        <Text style={s.pickInitial}>{pk.name?.[0]?.toUpperCase() ?? "?"}</Text>
+                      </View>
+                    </LinearGradient>
+                    <View style={s.onlineDot} />
+                  </View>
+                  <Text style={s.pickName} numberOfLines={1}>
+                    {pk.name}{pk.age ? `, ${pk.age}` : ""}
+                  </Text>
+                  <Text style={s.pickReason} numberOfLines={2}>{pk.reason}</Text>
+                </PressableScale>
+              ))}
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Topics are OPTIONAL — collapsed so the screen never feels like a form.
+            Empty = meet anyone; picking some just biases who we find. */}
+        <TouchableOpacity style={s.refineRow} onPress={() => setShowTopics((v) => !v)} activeOpacity={0.7}>
+          <Ionicons name="options-outline" size={16} color={theme.gold} />
+          <Text style={s.refineText}>
+            {picked.length
+              ? `Looking for people into ${picked.length} topic${picked.length > 1 ? "s" : ""}`
+              : "Want to talk about something specific? (optional)"}
+          </Text>
+          <Ionicons name={showTopics ? "chevron-up" : "chevron-down"} size={16} color={theme.muted} />
+        </TouchableOpacity>
+        {showTopics && (
+          <View style={{ marginTop: 12 }}>
+            <Text style={s.labelHint}>
+              Pick up to 5 — we'll prefer people who share them. Leave it empty to meet anyone.
+            </Text>
+            <View style={s.chipWrap}>
+              {suggested.map((i) => (
+                <TouchableOpacity key={i} onPress={() => toggle(i)}
+                  style={[s.chip, picked.includes(i) && s.chipOn]}>
+                  <Text style={[s.chipText, picked.includes(i) && s.chipTextOn]}>{withEmoji(i)}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity onPress={() => nav.navigate("Tabs", { screen: "Profile" })}>
+              <Text style={s.editLink}>Edit my interests →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -339,26 +378,61 @@ function PulseOrb() {
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg, overflow: "hidden" },
   h1: { color: theme.ink, fontSize: 32, fontFamily: theme.font.display, letterSpacing: -1,
-    marginTop: 44, lineHeight: 38 },
-  h1sub: { color: theme.muted, fontSize: 14.5, marginTop: 12, lineHeight: 21 },
-  timeCard: { flexDirection: "row", alignItems: "center", gap: 12, padding: 16 },
-  timeCardEmpty: { borderColor: theme.danger },
-  timeVal: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 15 },
-  timeSub: { color: theme.muted, fontSize: 12, marginTop: 3 },
-  timeAdd: { color: theme.gold, fontFamily: theme.font.black, fontSize: 13 },
-  picksTitle: { color: theme.ink, fontSize: 18, fontFamily: theme.font.displayMd,
-    letterSpacing: -0.3, marginTop: 30 },
-  picksSub: { color: theme.muted, fontSize: 12.5, marginTop: 4, marginBottom: 12, lineHeight: 17 },
-  pickCard: { width: 162, backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.lg, padding: 14, ...theme.shadow.card },
-  pickAvatar: { width: 44, height: 44, borderRadius: 22, alignItems: "center",
-    justifyContent: "center", ...theme.shadow.cta },
-  pickInitial: { color: "#fff", fontFamily: theme.font.black, fontSize: 18 },
-  pickName: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14.5, marginTop: 10 },
-  pickCity: { color: theme.muted, fontSize: 11.5, marginTop: 2 },
-  pickReason: { color: theme.ink, fontSize: 12, lineHeight: 16.5, marginTop: 8, opacity: 0.85, minHeight: 50 },
-  pickCta: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 10 },
-  pickCtaText: { color: theme.gold, fontSize: 11.5, fontFamily: theme.font.bold },
+    marginTop: 8, lineHeight: 38, textAlign: "center" },
+  h1sub: { color: theme.muted, fontSize: 14.5, marginTop: 12, lineHeight: 21, textAlign: "center",
+    alignSelf: "center", maxWidth: 300 },
+
+  // top app bar
+  appBar: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingHorizontal: 22, paddingBottom: 12 },
+  brand: { color: theme.gold, fontSize: 20, fontFamily: theme.font.displayMd, letterSpacing: -0.4 },
+  appBarRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  coinPill: { flexDirection: "row", alignItems: "center", gap: 5, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.pill,
+    paddingHorizontal: 12, paddingVertical: 7 },
+  coinText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.bold },
+  avatarBtn: { width: 38, height: 38, borderRadius: 19, borderWidth: 2, borderColor: theme.gold,
+    alignItems: "center", justifyContent: "center", backgroundColor: theme.card2 },
+  avatarInitial: { color: theme.ink, fontSize: 15, fontFamily: theme.font.black },
+
+  // hero mic
+  micWrap: { height: 258, alignItems: "center", justifyContent: "center", marginTop: 14 },
+  ring: { position: "absolute", borderRadius: 999, borderWidth: 1 },
+  ringOuter: { width: 240, height: 240, borderColor: "rgba(255,122,46,0.10)" },
+  ringInner: { width: 186, height: 186, borderColor: "rgba(255,122,46,0.20)" },
+  micGlow: { position: "absolute", width: 168, height: 168, borderRadius: 84,
+    backgroundColor: "rgba(255,94,58,0.28)" },
+  mic: { width: 152, height: 152, borderRadius: 76, alignItems: "center", justifyContent: "center",
+    shadowColor: "#FF5E3A", shadowOpacity: 0.55, shadowRadius: 30, shadowOffset: { width: 0, height: 0 },
+    elevation: 16 },
+  micHint: { color: theme.muted, fontSize: 13.5, textAlign: "center", marginTop: 4,
+    fontFamily: theme.font.semibold },
+
+  // activity / status glass card
+  activityCard: { flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: theme.line, borderRadius: theme.radii.lg, padding: 14,
+    ...theme.shadow.card },
+  activityIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: theme.goldSoft,
+    alignItems: "center", justifyContent: "center" },
+  activityTitle: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14 },
+  activitySub: { color: theme.muted, fontSize: 12, marginTop: 3 },
+
+  // today's picks
+  picksTitle: { color: theme.ink, fontSize: 20, fontFamily: theme.font.displayMd, letterSpacing: -0.3 },
+  picksSub: { color: theme.muted, fontSize: 12.5, marginTop: 4, marginBottom: 14, lineHeight: 17 },
+  picksGrid: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", gap: 12 },
+  pickCard: { width: "47.5%", backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, padding: 14, alignItems: "center", ...theme.shadow.card },
+  pickRing: { width: 64, height: 64, marginBottom: 8 },
+  pickRingGrad: { width: 64, height: 64, borderRadius: 32, padding: 2, alignItems: "center",
+    justifyContent: "center" },
+  pickAvatarInner: { width: "100%", height: "100%", borderRadius: 30, backgroundColor: theme.card2,
+    alignItems: "center", justifyContent: "center" },
+  pickInitial: { color: theme.ink, fontFamily: theme.font.black, fontSize: 20 },
+  onlineDot: { position: "absolute", bottom: 2, right: 2, width: 14, height: 14, borderRadius: 7,
+    backgroundColor: "#22C55E", borderWidth: 2, borderColor: theme.card },
+  pickName: { color: theme.ink, fontFamily: theme.font.bold, fontSize: 14, textAlign: "center" },
+  pickReason: { color: theme.muted, fontSize: 11.5, lineHeight: 15.5, marginTop: 5, textAlign: "center" },
   label: { color: theme.ink, fontSize: 16, fontFamily: theme.font.bold, marginTop: 32 },
   labelHint: { color: theme.muted, fontSize: 12, marginTop: 3, marginBottom: 12 },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },

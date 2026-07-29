@@ -18,7 +18,13 @@
       "WebFetch(domain:github.com)",
       "WebFetch(domain:api.github.com)",
       "Bash(node -e \"const p=require\\('./package.json'\\).dependencies; console.log\\('expo-haptics:', p['expo-haptics']||'MISSING'\\); console.log\\('expo-blur:', p['expo-blur']||'MISSING'\\);\")",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(git remote *)",
+      "Bash(cd \"/c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating\" && echo \"=== top level ===\" && ls -la && echo \"\" && echo \"=== full tree \\(files\\) ===\" && find . -type f | head -100)",
+      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/home_talk_refined/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/your_profile_refined/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/chats_conversation/**)"
     ]
   }
 }
