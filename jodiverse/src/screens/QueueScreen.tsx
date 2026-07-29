@@ -33,6 +33,7 @@ export default function QueueScreen() {
   const [preds, setPreds] = useState<Predicate[]>([]);
   const [waited, setWaited] = useState(0);
   const [busy, setBusy] = useState(false);
+  const [showTopics, setShowTopics] = useState(false); // topic picker is opt-in, not a form
   const timers = useRef<ReturnType<typeof setInterval>[]>([]);
   const fade = useRef(new Animated.Value(0)).current;
   const picksIn = useRef(new Animated.Value(0)).current;   // P2 section entrance
@@ -208,8 +209,8 @@ export default function QueueScreen() {
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 40 }}>
       <Text style={s.h1}>Talk to someone new</Text>
       <Text style={s.h1sub}>
-        No photos, no swiping. Tap and you're instantly talking to someone —
-        pick what you're in the mood for and we'll find a good match.
+        No photos, no swiping. Just tap the button — we'll connect you with
+        someone to talk to in seconds.
       </Text>
 
       {/* daily call count — talking is always free, this just shows today's tally */}
@@ -266,22 +267,9 @@ export default function QueueScreen() {
         </Animated.View>
       )}
 
-      <Text style={s.label}>I want to talk about</Text>
-      <Text style={s.labelHint}>{picked.length}/5 picked</Text>
-      <View style={s.chipWrap}>
-        {suggested.map((i) => (
-          <TouchableOpacity key={i} onPress={() => toggle(i)}
-            style={[s.chip, picked.includes(i) && s.chipOn]}>
-            <Text style={[s.chipText, picked.includes(i) && s.chipTextOn]}>{withEmoji(i)}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-      <TouchableOpacity onPress={() => nav.navigate("Tabs", { screen: "Profile" })}>
-        <Text style={s.editLink}>Edit my interests →</Text>
-      </TouchableOpacity>
-
-      <PressableScale onPress={joinQueue} disabled={busy || picked.length === 0}
-        haptics={false} style={{ marginTop: 34 }}>
+      {/* THE action — one tap, always ready. No form to fill first. */}
+      <PressableScale onPress={joinQueue} disabled={busy}
+        haptics={false} style={{ marginTop: 36 }}>
         <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={s.cta}>
           <Ionicons name="mic" size={19} color={theme.onGold} />
@@ -290,7 +278,37 @@ export default function QueueScreen() {
           </Text>
         </LinearGradient>
       </PressableScale>
-      <Text style={s.quota}>You'll be connected instantly · calls cap at 10 minutes</Text>
+      <Text style={s.quota}>We'll connect you with someone instantly · 10 min max per call</Text>
+
+      {/* Topics are OPTIONAL — collapsed so the screen never feels like a form.
+          Empty = meet anyone; picking some just biases who we find. */}
+      <TouchableOpacity style={s.refineRow} onPress={() => setShowTopics((v) => !v)} activeOpacity={0.7}>
+        <Ionicons name="options-outline" size={16} color={theme.gold} />
+        <Text style={s.refineText}>
+          {picked.length
+            ? `Looking for people into ${picked.length} topic${picked.length > 1 ? "s" : ""}`
+            : "Want to talk about something specific? (optional)"}
+        </Text>
+        <Ionicons name={showTopics ? "chevron-up" : "chevron-down"} size={16} color={theme.muted} />
+      </TouchableOpacity>
+      {showTopics && (
+        <View style={{ marginTop: 12 }}>
+          <Text style={s.labelHint}>
+            Pick up to 5 — we'll prefer people who share them. Leave it empty to meet anyone.
+          </Text>
+          <View style={s.chipWrap}>
+            {suggested.map((i) => (
+              <TouchableOpacity key={i} onPress={() => toggle(i)}
+                style={[s.chip, picked.includes(i) && s.chipOn]}>
+                <Text style={[s.chipText, picked.includes(i) && s.chipTextOn]}>{withEmoji(i)}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity onPress={() => nav.navigate("Tabs", { screen: "Profile" })}>
+            <Text style={s.editLink}>Edit my interests →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       </ScrollView>
     </View>
   );
@@ -350,6 +368,10 @@ const s = StyleSheet.create({
   chipText: { color: theme.muted, fontSize: 13, fontFamily: theme.font.semibold },
   chipTextOn: { color: theme.gold },
   editLink: { color: theme.muted, fontSize: 12.5, marginTop: 14, fontFamily: theme.font.semibold },
+  refineRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 22,
+    paddingVertical: 12, paddingHorizontal: 14, borderRadius: theme.radii.md,
+    borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card },
+  refineText: { color: theme.ink, fontSize: 13.5, fontFamily: theme.font.semibold, flex: 1 },
   cta: { borderRadius: theme.radii.pill, paddingVertical: 18, alignItems: "center", flexDirection: "row",
     justifyContent: "center", gap: 9, ...theme.shadow.cta },
   ctaText: { color: theme.onGold, fontFamily: theme.font.black, fontSize: 16.5, letterSpacing: 0.2 },
