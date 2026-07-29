@@ -41,9 +41,20 @@ const COMPAT_QUESTIONS: { key: string; q: string; opts: [string, string][] }[] =
 const AI_BIO_ENABLED = false;
 
 function Chip({ label, on, onPress }: { label: string; on: boolean; onPress: () => void }) {
+  // Selected pills glow with the brand gradient (matches the Stitch questionnaire).
+  if (on) {
+    return (
+      <TouchableOpacity onPress={onPress} activeOpacity={0.85} style={s.chipGradWrap}>
+        <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={[s.chip, s.chipOn]}>
+          <Text style={[s.chipText, s.chipTextOn]}>{label}</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
   return (
-    <TouchableOpacity onPress={onPress} style={[s.chip, on && s.chipOn]}>
-      <Text style={[s.chipText, on && s.chipTextOn]}>{label}</Text>
+    <TouchableOpacity onPress={onPress} style={s.chip}>
+      <Text style={s.chipText}>{label}</Text>
     </TouchableOpacity>
   );
 }
@@ -540,9 +551,10 @@ const s = StyleSheet.create({
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 9 },
   chip: { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card,
     paddingHorizontal: 15, paddingVertical: 10, borderRadius: 999 },
-  chipOn: { borderColor: theme.gold, backgroundColor: theme.goldSoft },
+  chipGradWrap: { borderRadius: 999, ...theme.shadow.cta },
+  chipOn: { borderColor: "transparent" },
   chipText: { color: theme.muted, fontSize: 13, fontFamily: theme.font.semibold },
-  chipTextOn: { color: theme.gold },
+  chipTextOn: { color: "#fff", fontFamily: theme.font.bold },
   grid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 6 },
   cell: { width: "31%", aspectRatio: 3 / 4, borderRadius: theme.radii.md, backgroundColor: theme.card,
     borderWidth: 1, borderColor: theme.line, alignItems: "center", justifyContent: "center",
