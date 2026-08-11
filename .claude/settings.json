@@ -48,7 +48,22 @@
       "Bash(powershell -Command \"Stop-Process -Id 24944,34624 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Get-NetTCPConnection -State Listen -LocalPort 8081,8083 -ErrorAction SilentlyContinue\")",
       "Bash(powershell -Command \"Get-NetTCPConnection -State Listen -LocalPort 8081,8083 -ErrorAction SilentlyContinue | Select-Object LocalPort, OwningProcess\")",
       "WebFetch(domain:healthyframework.com)",
-      "Bash(grep -n \"const \\\\[lifestyle\\\\|const \\\\[faith\\\\|const \\\\[diet\\\\|const \\\\[drinking\\\\|const \\\\[heightCm\\\\|lifestyle,$\\\\|lifestyle,\" src/screens/OnboardingScreen.tsx)"
+      "Bash(grep -n \"const \\\\[lifestyle\\\\|const \\\\[faith\\\\|const \\\\[diet\\\\|const \\\\[drinking\\\\|const \\\\[heightCm\\\\|lifestyle,$\\\\|lifestyle,\" src/screens/OnboardingScreen.tsx)",
+      "Bash(git fetch *)",
+      "Bash(echo \"=== tsc exit $? ===\")",
+      "Bash(grep -rhoE '\\\\.rpc\\\\\\(\"[a-z_]+\"\\(, *\\\\{[^}]*\\\\}\\)?' src/)",
+      "Bash(grep -v \"^--$\")",
+      "Bash(grep -rn -A4 '\\\\.from\\(\"profiles\"\\)$\\\\|\\\\.from\\(\"profiles\"\\)\\\\s*$' src/)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(cd /c/Users/ramgu/OneDrive/Desktop/jodiverse-app *)",
+      "Bash(python -)",
+      "Bash(python -c \"import json;json.load\\(open\\('app.json'\\)\\);print\\('valid json'\\)\")",
+      "Bash(cd /c/Users/ramgu/OneDrive/Desktop/jodiverse-app/jodiverse/supabase/functions *)",
+      "Read(//c/Users/ramgu/OneDrive/src/screens/**)",
+      "Bash(sed -n '/create table if not exists matches/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
+      "Bash(sed -n '/create table if not exists messages/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
+      "Bash(sed -n '/create table if not exists blocks/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
+      "Bash(git commit *)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ramgu\\.claude\\projects\\c--Users-ramgu-OneDrive-Desktop-jodiverse-app\\memory"

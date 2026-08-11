@@ -1,83 +1,159 @@
 # Launch checklist
 
-The product is feature-complete and polished. What's left is the work that turns
-a great prototype into something real users can safely pay for. Ordered by leverage.
-✅ = done · 🔲 = pending.
+Ordered by what blocks what. Everything above the line stops a public launch;
+everything below it makes the launch good. ✅ done · 🔲 pending.
+
+The app is **DostiConnect** (`com.dosticonnect.app`, scheme `dosticonnect`).
+Supabase project: `yqkvgbbordwurtgnyyxi` (org `ramvenkat1515-eng`).
 
 ---
 
-## 🚀 Launch-blocking (must be real before public launch)
+## Step 0 — run these, in this order
 
-### 🔲 1. Decide the app name
-Still undecided — it blocks the bundle ID, domain, store listing, and marketing.
-Screened-open finalists: **Lilt · Zing · Talq · Murmr · Muchchata · Mishri**.
-*Everything below is cleaner once this is locked.*
+These are already written. Nothing else works until they're applied.
 
-### 🔲 2. Real voice audio (WebRTC)
-Calls currently use a **simulated** transport (`VOICE_MODE = "simulated"` in
-`src/lib/voice.ts`). Real peer-to-peer audio needs:
-- an **EAS dev build** (`react-native-webrtc` doesn't run in Expo Go),
-- flip `VOICE_MODE` to real + wire the `WebRtcTransport` sketch already in `voice.ts`,
-- test on **two physical phones**.
+| # | What | Where |
+|---|------|-------|
+| 🔲 1 | `bootstrap-mobile-app.sql` | SQL editor — schema, RLS, triggers, deck ✅ *(already run)* |
+| 🔲 2 | `dilmil-parity-v26.sql` | requests, insights, extended deck ✅ *(already run)* |
+| 🔲 3 | `admin-v27.sql` | admin RPCs + real `match_score_pct` — **re-run after the pre-flight-drop fix** |
+| 🔲 4 | `moderation-v28.sql` | photo moderation, block list, `export_my_data()` |
 
-### 🔲 3. Real profile verification (biometric + device integrity)
-Today it's a **working pipeline with a stubbed brain** — the security is real (only the
-`verify-selfie` edge function, via service role, can set `is_verified`/`is_active`;
-`trg_guard_flags` blocks clients), but the actual checks are not implemented:
-- **On-device face-match + liveness** (iOS Vision / Android ML Kit) — needs the EAS dev
-  build; today the app just sends `passed: true`.
-- **Device integrity** in `verify-selfie` → implement **Play Integrity (Android)** +
-  **App Attest (iOS)** in `verifyIntegrity()` using app credentials.
-- Turn **OFF** the `ALLOW_UNVERIFIED_DEVICES` dev-bypass secret.
-- Nothing biometric is ever stored — only the boolean. Keep it that way.
+Then deploy the edge functions:
 
-### 🔲 4. Real payments (RevenueCat + UPI)
-Subscriptions & coins are **dev stubs** (`DEV_INSTANT_CREDIT` in `CoinsScreen`, the
-Paywall CTA is an alert). Wire **RevenueCat**; its webhook already writes the
-`subscriptions` table. Add UPI as a payment method for India.
-
-### 🔲 5. EAS Build + store submission
-Produce the `.aab` / `.ipa`, then Play Store ($25 once) + App Store (Apple Dev $99/yr).
-This is what unlocks items 2 & 3 (real audio, ML verification), haptics, and push.
+```bash
+cd jodiverse
+supabase functions deploy moderate-photo    # new
+supabase functions deploy likes-you         # id-in-payload fix
+supabase functions deploy verify-selfie     # real Play Integrity
+supabase functions deploy notify-message    # routing payload + token pruning
+```
 
 ---
 
-## 🔧 Backend activation (SQL to run in the Supabase editor)
+# 🚨 Launch-blocking
 
-- 🔲 **`lounges-antighost-v15.sql`** — lounges tables + RPCs (the Lounges tab + anti-ghosting).
-  *(Note: run its lounge parts; keep v16's `invite_to_call` — don't let v15 revert it.)*
-- ✅ v17 semantic · v18 picks · v19/v20 admin · v21 offboarding — run.
-- 🔲 **Embeddings backfill** — existing users (created before v17) have no
-  `interest_embedding`; they self-heal on next bio save, or run a one-time backfill.
+### 🔲 1. Turn device integrity ON
+`verify-selfie` implements Play Integrity for real, but honours a dev escape:
 
-## 🔑 Login providers (the new multi-option login screen is built)
+```
+ALLOW_UNVERIFIED_DEVICES=true    ← DELETE this secret before launch
+```
 
-The login UI (phone-OTP · Google · Facebook · email) ships in `AuthScreen`. To make
-each provider actually work, enable it in Supabase → Auth → Providers:
-- ✅ **Google** — already working.
-- 🔲 **Email** — working (built-in; Supabase's default email is flaky → add custom SMTP).
-- 🔲 **Phone OTP** — needs an **SMS provider** (Twilio / MSG91) *plus* **India DLT**
-  registration for OTP templates. Enable "Phone" provider + paste credentials.
-  Until then the app shows "phone login isn't switched on yet — use Google."
-- 🔲 **Facebook** — create a **Facebook app** (developers.facebook.com), get through
-  Facebook Login **app review**, and paste the App ID + secret into the Facebook
-  provider. Add the Supabase callback URL to the FB app. Until then it shows a
-  friendly "not switched on yet" message.
+With it set, anyone can POST `{ passed: true }` and become verified. Also set:
+
+- `ANDROID_PACKAGE_NAME=com.dosticonnect.app`
+- `GOOGLE_SERVICE_ACCOUNT_JSON` — service account with the Play Integrity API
+  enabled, linked to the app in Play Console → Release → App integrity.
+- iOS: finish App Attest per `supabase/functions/verify-selfie/APP_ATTEST.md`.
+  Until it's done `verifyAppAttest()` **fails closed**, so iOS verification is
+  simply unavailable rather than fakeable.
+
+### 🔲 2. On-device face match + liveness
+`src/screens/VerifyScreen.tsx:34` sends `passed: true` unconditionally. The
+server-side gate is real, but the *client's claim* is not checked. Needs an EAS
+dev build plus ML Kit (Android) / Vision (iOS) to compare the live selfie
+against the profile photo. **Do not ship the verified badge until this is real** —
+a badge that means nothing is worse than no badge.
+
+### 🔲 3. Google Cloud Vision key for photo moderation
+`moderate-photo` needs `GOOGLE_SERVICE_ACCOUNT_JSON` (same SA is fine) with the
+Cloud Vision API enabled. Without it every upload lands in the `flagged` queue
+and no photo is ever visible — the app looks empty rather than unsafe, which is
+the correct failure direction, but it's still broken.
+
+### 🔲 4. EAS environment variables
+`.env` is gitignored, so EAS does **not** upload it. `src/lib/supabase.ts` now
+throws a clear error instead of shipping `undefined`, but you must set:
+
+```bash
+eas env:create --name EXPO_PUBLIC_SUPABASE_URL      --value https://yqkvgbbordwurtgnyyxi.supabase.co
+eas env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value <anon key>
+eas env:create --name EXPO_PUBLIC_GIPHY_KEY         --value <giphy key>   # optional; GIF picker
+```
+
+Repeat per environment (`development` / `preview` / `production`).
+
+### 🔲 5. OAuth redirect URLs
+Supabase → Authentication → URL Configuration → Redirect URLs, add:
+
+```
+dosticonnect://**
+```
+
+Google sign-in works in Expo Go today only because of the dev proxy. **In a real
+build it breaks without this.** Also add the production bundle IDs to the Google
+and Facebook OAuth client configs.
+
+### 🔲 6. Legal pages must be live and filled in
+`website/privacy.html` and `website/terms.html` are written against how the app
+actually behaves, but every `[BRACKETED]` value is a placeholder rendered in red.
+Fill in the legal entity, address, emails, jurisdiction, and dates, have a
+lawyer review, then host them. Both stores fetch these URLs and check.
+
+The app links to `${EXPO_PUBLIC_LEGAL_BASE}/privacy.html`. Set that to the real
+domain in `eas.json` (currently `https://dosticonnect.app`).
+
+### 🔲 7. Push notifications end-to-end
+Code is done — token registration, tap routing into `ChatRoom`, dead-token
+pruning, token deletion on logout. What's left is infrastructure:
+
+- **Database webhook**: Supabase → Database → Webhooks → Create.
+  Table `messages`, event `INSERT`, type *Supabase Edge Function* →
+  `notify-message`. (The dashboard attaches the service-role header.)
+- **FCM v1**: upload the service account JSON to Expo
+  (`eas credentials` → Android → *FCM V1 service account key*).
+- **APNs**: `eas credentials` → iOS → push key (Expo can generate it).
+- Test on a real device — **push does not work in Expo Go at all** (SDK 53+).
+
+### 🔲 8. Payments *(deliberately deferred)*
+`src/screens/CoinsScreen.tsx:16` has `DEV_INSTANT_CREDIT = true` — it grants
+coins **without charging anyone**. Harmless while testing, free money in
+production. Either wire `react-native-purchases` + the `revenuecat-webhook`
+function, or set the flag to `false` and hide the purchase UI before launch.
+
+### 🔲 9. App store assets
+Icon (1024×1024), splash, 5–8 screenshots per platform, feature graphic
+(Android), description, keywords, support URL, and the **data safety /
+privacy nutrition label** — fill it from §2 of `website/privacy.html`, which is
+already itemised for exactly this.
 
 ---
 
-## 🧊 Pre-launch polish / compliance (not blocking a beta, needed for public)
+# 🟡 Should do before real users
 
-- 🔲 **Privacy Policy + Terms** (store requirement) — currently stubbed in Settings.
-- 🔲 **Push notifications** delivery (needs dev build) — messages / anti-ghosting nudges.
-- 🔲 **Trait-privacy toggle UI** (`set_trait_privacy` RPC exists, unused).
-- 🔲 **Reliable email** (custom SMTP) — Supabase's built-in email is rate-limited/flaky.
-- 🔲 **Moderation staffing / process** for reports (the queue + admin console are ready).
-- 🔲 **DPDP / data-export** ("Download My Data" is stubbed).
+- 🔲 **Seed the deck.** `is_active` defaults false and only `verify-selfie` can
+  flip it. With integrity on and zero verified users, every deck is empty. Plan
+  the first ~50 profiles.
+- 🔲 **Moderation rota.** Someone has to watch the Photo review panel in
+  `admin/index.html` daily, and answer the appeals address promised in §7 of
+  the Terms.
+- 🔲 **Error monitoring.** Sentry or equivalent — right now a crash in
+  production is invisible.
+- 🔲 **Rate limits** on the edge functions (`likes-you`, `generate-profile`,
+  `moderate-photo`) — each one costs money per call.
+- 🔲 **Delete the calorie-app POC leftovers** in project `mkwdfbffcboqzyspuhmt`:
+  stray profile columns and a `trg_guard_flags` trigger that will break that
+  project's inserts. Applied there by mistake; unrelated to this app.
 
 ---
 
-## ✅ Already done
-Voice-first app (P0–P4 features), Aurora design system, semantic matching, Today's
-picks, admin console (real-data, 8 panels + churn), deletion-deflection flow, CI/CD,
-private GitHub repo. See `jodiverse/FEATURE-UPGRADES.md` for the feature roadmap.
+# ✅ Done
+
+- Schema, RLS, triggers, deck ranking, match scoring (`match_score_pct` — real
+  weighted score, returns null rather than inventing a number)
+- Swipe deck, likes, requests, matches, chat (text / image / GIF / emoji),
+  unmatch, report, block **and unblock** (Settings → Block list)
+- Profile editing incl. traits, love language, exercise, voice intro,
+  compatibility questionnaire
+- Photo moderation pipeline: Cloud Vision auto-screen → human queue → RLS hides
+  anything not approved, fails closed
+- Real Play Integrity in `verify-selfie`; App Attest fails closed with a
+  documented finish-line
+- Push: registration, tap routing, dead-token pruning, logout cleanup
+- Data export (`export_my_data()` → share sheet) and in-app account deletion
+- Admin console on real data — overview, 30-day chart, funnel, engagement,
+  demographics, photo review, reports, churn
+- Privacy Policy and Terms of Service written against actual app behaviour
+- `eas.json` with development / preview / production profiles
+- Voice-calling feature fully removed (product pivot, 2026-08)

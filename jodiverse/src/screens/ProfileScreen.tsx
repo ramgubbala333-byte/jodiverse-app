@@ -350,12 +350,33 @@ export default function ProfileScreen() {
       <SectionHeader icon="images" title="Photos"
         hint="Shown after you match on a call. Long-press to remove." />
       <View style={s.grid}>
-        {photos.map((p, i) => (
-          <TouchableOpacity key={p.id} style={s.cell} onLongPress={() => removePhoto(p)}>
-            <Image source={{ uri: p.url }} style={s.cellImg} />
-            {i === 0 && <View style={s.mainTag}><Text style={s.mainTagText}>MAIN</Text></View>}
-          </TouchableOpacity>
-        ))}
+        {photos.map((p, i) => {
+          // Photos are hidden from others until moderation clears them — say so,
+          // otherwise "why is nobody seeing me?" is invisible to the user.
+          const pending = p.moderation === "pending" || p.moderation === "flagged";
+          const rejected = p.moderation === "rejected";
+          return (
+            <TouchableOpacity key={p.id} style={s.cell} onLongPress={() => removePhoto(p)}>
+              <Image source={{ uri: p.url }} style={s.cellImg} />
+              {(pending || rejected) && <View style={s.modScrim} />}
+              {i === 0 && !pending && !rejected && (
+                <View style={s.mainTag}><Text style={s.mainTagText}>MAIN</Text></View>
+              )}
+              {pending && (
+                <View style={[s.modTag, { backgroundColor: "rgba(8,10,18,.8)" }]}>
+                  <Ionicons name="time-outline" size={11} color={theme.gold} />
+                  <Text style={[s.modTagText, { color: theme.gold }]}>In review</Text>
+                </View>
+              )}
+              {rejected && (
+                <View style={[s.modTag, { backgroundColor: "rgba(8,10,18,.85)" }]}>
+                  <Ionicons name="close-circle" size={11} color={theme.danger} />
+                  <Text style={[s.modTagText, { color: theme.danger }]}>Rejected</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
         {photos.length < 6 && (
           <TouchableOpacity style={[s.cell, s.cellAdd]} onPress={addPhoto}>
             <Ionicons name="add" size={30} color={theme.gold} />
@@ -636,6 +657,10 @@ const s = StyleSheet.create({
   mainTag: { position: "absolute", left: 6, bottom: 6, backgroundColor: "rgba(8,10,18,0.72)",
     borderRadius: 5, paddingHorizontal: 7, paddingVertical: 3 },
   mainTagText: { color: "#fff", fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.6 },
+  modScrim: { ...StyleSheet.absoluteFillObject, backgroundColor: "rgba(8,10,18,.55)" },
+  modTag: { position: "absolute", left: 5, bottom: 5, right: 5, flexDirection: "row",
+    alignItems: "center", justifyContent: "center", gap: 3, borderRadius: 6, paddingVertical: 4 },
+  modTagText: { fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.4 },
 
   // bio
   bioInput: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,

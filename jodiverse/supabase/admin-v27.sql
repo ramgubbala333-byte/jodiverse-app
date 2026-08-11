@@ -14,6 +14,36 @@
 -- A non-admin calling these gets NOT_ADMIN, so the dashboard can safely run
 -- on the public anon key — exactly like the mobile app does.
 
+-- ═══ PRE-FLIGHT: drop the old admin-v19/v20 versions ══════════════════════
+-- Those functions still exist in this database with different return shapes,
+-- and Postgres refuses to CREATE OR REPLACE across a shape change (42P13).
+-- Dropping first is safe: functions hold no data, and every one of them is
+-- recreated below.
+drop function if exists admin_overview() cascade;
+drop function if exists admin_timeseries(int) cascade;
+drop function if exists admin_timeseries() cascade;
+drop function if exists admin_recent_reports(int) cascade;
+drop function if exists admin_recent_reports() cascade;
+drop function if exists admin_reports_by_reason() cascade;
+drop function if exists admin_resolve_report(uuid) cascade;
+drop function if exists admin_demographics() cascade;
+drop function if exists admin_offboarding() cascade;
+drop function if exists admin_funnel() cascade;
+drop function if exists admin_engagement() cascade;
+drop function if exists am_i_admin() cascade;
+drop function if exists match_score_pct(uuid) cascade;
+-- v20 analytics that this file intentionally does NOT recreate (they read the
+-- deleted voice tables). Dropped so nothing can call them and error at runtime.
+drop function if exists admin_most_reported() cascade;
+drop function if exists admin_match_quality() cascade;
+drop function if exists admin_verification() cascade;
+drop function if exists admin_by_language() cascade;
+drop function if exists admin_by_city() cascade;
+drop function if exists admin_calls_by_hour() cascade;
+drop function if exists admin_revenue() cascade;
+-- NOTE: is_admin() is NOT dropped — admin_offboarding() in offboarding-v21
+-- may still reference it, and its signature is unchanged anyway.
+
 -- ═══ 0. REAL COMPATIBILITY SCORE ══════════════════════════════════════════
 -- The match card showed a hardcoded "94%" to everyone, plus a static
 -- "our AI notes a strong alignment…" paragraph — a claim about analysis that

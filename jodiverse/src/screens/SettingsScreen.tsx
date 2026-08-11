@@ -5,8 +5,18 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { supabase } from "../lib/supabase";
+import { unregisterPush } from "../lib/push";
+import * as WebBrowser from "expo-web-browser";
+import * as Sharing from "expo-sharing";
+import { File, Paths } from "expo-file-system";
 import { theme } from "../theme";
 
+
+// Legal docs live on the marketing site (website/privacy.html, terms.html) so
+// the store listings and the app point at the SAME text. Override per-build
+// with EXPO_PUBLIC_LEGAL_BASE once the domain is live.
+const LEGAL_BASE =
+  process.env.EXPO_PUBLIC_LEGAL_BASE ?? "https://dosticonnect.app";
 
 // ── sliders (no external deps: PanResponder thumbs over a plain track) ─────
 const AGE_LO = 18, AGE_HI = 99, THUMB = 26;
@@ -295,6 +305,47 @@ export default function SettingsScreen() {
     }
   };
 
+  // Data portability (GDPR art. 20 / DPDP). export_my_data() is scoped to
+  // auth.uid() server-side, so this can only ever dump the caller's own
+  // account. Written to cache — not documents — because it is a throwaway
+  // copy the user is about to hand to the share sheet.
+  const [exporting, setExporting] = useState(false);
+  const exportData = async () => {
+    if (exporting) return;
+    setExporting(true);
+    const { data, error } = await supabase.rpc("export_my_data");
+    setExporting(false);
+    if (error || !data) {
+      Alert.alert("Export failed", error?.message ?? "Please try again.");
+      return;
+    }
+    try {
+      const file = new File(Paths.cache, "dosticonnect-my-data.json");
+      if (file.exists) file.delete();
+      file.create();
+      file.write(JSON.stringify(data, null, 2));
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(file.uri, {
+          mimeType: "application/json",
+          dialogTitle: "Your DostiConnect data",
+          UTI: "public.json",
+        });
+      } else {
+        Alert.alert("Saved", `Your data was written to ${file.uri}`);
+      }
+    } catch (e: any) {
+      Alert.alert("Export failed", String(e?.message ?? e));
+    }
+  };
+
+  // Drop the push token BEFORE signing out: it is keyed to this user, and a
+  // token left behind keeps delivering their messages to whoever logs in next.
+  const logOut = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) await unregisterPush(data.user.id);
+    await supabase.auth.signOut();
+  };
+
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ paddingBottom: 40 + insets.bottom }}>
       <Section title="Profile">
@@ -324,7 +375,7 @@ export default function SettingsScreen() {
           onPress={() => nav.navigate("Verify")} />
         <LinkRow title="Block List"
           sub="Blocked people won't see you and you won't see them on Dosti Connect."
-          onPress={stub("Block List", "Block anyone from their profile or chat. A full management list arrives before launch.")} />
+          onPress={() => nav.navigate("BlockList")} />
       </Section>
 
       <Section title="Phone & email">
@@ -353,11 +404,14 @@ export default function SettingsScreen() {
 
       <Section title="Legal">
         <LinkRow title="Privacy Policy"
-          onPress={stub("Privacy policy", "Being finalised with counsel before launch.")} />
+          sub="What we collect, who sees it, and how long we keep it."
+          onPress={() => WebBrowser.openBrowserAsync(`${LEGAL_BASE}/privacy.html`)} />
         <LinkRow title="Terms of Service"
-          onPress={stub("Terms of service", "Being finalised with counsel before launch.")} />
+          sub="The rules, and how to appeal if we act on your account."
+          onPress={() => WebBrowser.openBrowserAsync(`${LEGAL_BASE}/terms.html`)} />
         <LinkRow title="Download My Data"
-          onPress={stub("Download My Data", "A full data export arrives before launch — required and important.")} />
+          sub="A machine-readable copy of everything on your account."
+          onPress={exportData} />
       </Section>
 
       <Section title="Community">
@@ -381,7 +435,7 @@ export default function SettingsScreen() {
       </Section>
 
       {/* centered account actions, Hinge-style */}
-      <TouchableOpacity style={s.centerRow} onPress={() => supabase.auth.signOut()}>
+      <TouchableOpacity style={s.centerRow} onPress={logOut}>
         <Text style={s.centerText}>Log Out</Text>
       </TouchableOpacity>
       {deleting ? (

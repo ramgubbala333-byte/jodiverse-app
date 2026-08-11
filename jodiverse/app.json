@@ -14,7 +14,7 @@
       "supportsTablet": false,
       "infoPlist": {
         "NSCameraUsageDescription": "Used to take selfie verification photos.",
-        "NSMicrophoneUsageDescription": "Used to record your voice intro and for voice calls.",
+        "NSMicrophoneUsageDescription": "Used to record the voice intro on your profile.",
         "NSPhotoLibraryUsageDescription": "Used to select profile photos and video clips.",
         "NSLocationWhenInUseUsageDescription": "Used to calculate approximate distance with potential matches."
       }
@@ -25,8 +25,7 @@
         "CAMERA",
         "RECORD_AUDIO",
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION",
-        "READ_EXTERNAL_STORAGE"
+        "ACCESS_COARSE_LOCATION"
       ]
     },
     "plugins": [
@@ -52,6 +51,12 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "Used to calculate approximate distance with potential matches."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#0B0D14"
         }
       ]
     ]

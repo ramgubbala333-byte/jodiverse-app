@@ -23,6 +23,10 @@ ios/build/
 *.key
 *.mobileprovision
 
+# Store submission credentials (referenced by jodiverse/eas.json)
+secrets/
+play-service-account.json
+
 # ── Logs & caches ────────────────────────────────────────────
 *.log
 npm-debug.*

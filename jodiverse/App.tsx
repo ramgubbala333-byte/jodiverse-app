@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { DefaultTheme, NavigationContainer } from "@react-navigation/native";
+import { DefaultTheme, NavigationContainer, createNavigationContainerRef } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, StatusBar, View, StyleSheet, Text, TextInput } from "react-native";
@@ -22,6 +22,7 @@ import LikesScreen from "./src/screens/LikesScreen";
 import RequestsScreen from "./src/screens/RequestsScreen";
 import InsightsScreen from "./src/screens/InsightsScreen";
 import FiltersScreen from "./src/screens/FiltersScreen";
+import BlockListScreen from "./src/screens/BlockListScreen";
 import MatchedScreen from "./src/screens/MatchedScreen";
 import CoinsScreen from "./src/screens/CoinsScreen";
 import ReferralScreen from "./src/screens/ReferralScreen";
@@ -33,12 +34,13 @@ import VerifyScreen from "./src/screens/VerifyScreen";
 import PaywallScreen from "./src/screens/PaywallScreen";
 import MatchProfileScreen from "./src/screens/MatchProfileScreen";
 import SettingsScreen from "./src/screens/SettingsScreen";
-import { registerPush } from "./src/lib/push";
+import { registerPush, attachPushHandlers } from "./src/lib/push";
 import { haptic } from "./src/lib/haptics";
 import type { Session } from "@supabase/supabase-js";
 
 const Tab = createBottomTabNavigator();
 const Stack = createNativeStackNavigator();
+const navRef = createNavigationContainerRef<any>();
 
 // Retype the WHOLE app to the branded body face in one shot. Every screen's
 // <Text>/<TextInput> inherits Plus Jakarta Sans (medium) as its base; hero
@@ -155,6 +157,16 @@ export default function App() {
     return () => sub.remove();
   }, [session, hasProfile]);
 
+  // Tapping a message push opens that conversation. Guarded on hasProfile:
+  // a cold-start tap can land before the navigator exists, and navigating
+  // into ChatRoom while the user is still on Auth/Onboarding would throw.
+  useEffect(() => {
+    if (!session || !hasProfile) return;
+    return attachPushHandlers((t) => {
+      if (navRef.isReady()) navRef.navigate("ChatRoom", t);
+    });
+  }, [session, hasProfile]);
+
   const [fontsLoaded] = useFonts({
     Unbounded_700Bold, Unbounded_800ExtraBold,
     PlusJakartaSans_400Regular, PlusJakartaSans_500Medium,
@@ -179,7 +191,7 @@ export default function App() {
   if (!fontsLoaded || !ready || (session && hasProfile === null)) return null;
 
   return (
-    <NavigationContainer theme={navTheme}>
+    <NavigationContainer theme={navTheme} ref={navRef}>
       <StatusBar barStyle="light-content" backgroundColor={theme.bg} />
       <Stack.Navigator screenOptions={{ headerShown: false,
         headerTitleStyle: { fontFamily: theme.font.bold, color: theme.ink },
@@ -223,6 +235,9 @@ export default function App() {
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Filters" component={FiltersScreen}
               options={{ headerShown: true, title: "Filters", headerTintColor: theme.ink,
+                headerStyle: { backgroundColor: theme.card } }} />
+            <Stack.Screen name="BlockList" component={BlockListScreen}
+              options={{ headerShown: true, title: "Block list", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Settings" component={SettingsScreen}
               options={{ headerShown: true, title: "Settings", headerTintColor: theme.ink,

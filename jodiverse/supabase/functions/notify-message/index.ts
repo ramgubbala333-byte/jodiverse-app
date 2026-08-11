@@ -26,23 +26,50 @@ Deno.serve(async (req) => {
     if (!match || match.unmatched) return json({ ok: false, reason: "no_match" });
 
     const recipient = match.a === msg.sender ? match.b : match.a;
+
+    // Blocked either way ⇒ no push. The block may have landed after the
+    // message row was written, and a push is the one part of the app that
+    // reaches someone who has explicitly opted out of hearing from them.
+    const { count: blocked } = await admin
+      .from("blocks").select("blocker", { count: "exact", head: true })
+      .or(`and(blocker.eq.${recipient},blocked.eq.${msg.sender}),` +
+          `and(blocker.eq.${msg.sender},blocked.eq.${recipient})`);
+    if (blocked && blocked > 0) return json({ ok: true, pushed: false, reason: "blocked" });
+
     const { data: tok } = await admin
       .from("push_tokens").select("token").eq("user_id", recipient).maybeSingle();
     if (!tok?.token) return json({ ok: true, pushed: false });
 
     const { data: senderProf } = await admin
       .from("profiles").select("display_name").eq("id", msg.sender).maybeSingle();
+    const name = senderProf?.display_name ?? "Someone";
 
     const res = await fetch("https://exp.host/--/api/v2/push/send", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         to: tok.token,
-        title: senderProf?.display_name ?? "New message",
+        title: name,
         body: "sent you a message 💬",
-        data: { matchId: msg.match_id },
+        sound: "default",
+        channelId: "default",
+        // The client opens ChatRoom with exactly these params. matchId alone
+        // is not enough — the screen also renders the header name and needs
+        // otherId for the "view profile" tap.
+        data: { matchId: msg.match_id, name, otherId: msg.sender },
       }),
     });
+
+    // Expo answers 200 even for a dead token; the verdict is per-ticket.
+    // An uninstalled app returns DeviceNotRegistered forever, so prune it —
+    // otherwise every future message burns a request on a device that is gone.
+    const ticket = await res.json().catch(() => null);
+    const err = ticket?.data?.details?.error ?? ticket?.data?.[0]?.details?.error;
+    if (err === "DeviceNotRegistered") {
+      await admin.from("push_tokens").delete().eq("user_id", recipient);
+      return json({ ok: true, pushed: false, reason: "device_not_registered" });
+    }
+
     return json({ ok: res.ok, pushed: true });
   } catch (e) {
     return json({ ok: false, error: String(e) }, 500);

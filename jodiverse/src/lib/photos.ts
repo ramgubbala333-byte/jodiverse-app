@@ -10,7 +10,9 @@ function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-export type OwnPhoto = { id: string; storage_path: string; position: number; url: string };
+export type OwnPhoto = { id: string; storage_path: string; position: number; url: string;
+  moderation?: "pending" | "approved" | "rejected" | "flagged";
+  moderation_reason?: string | null };
 
 /**
  * Pick from the gallery, resize + re-encode to JPEG.
@@ -66,10 +68,21 @@ export async function uploadPhoto(userId: string, base64: string, position: numb
     .from("photos")
     .upload(path, base64ToBytes(base64).buffer as ArrayBuffer, { contentType: "image/jpeg" });
   if (upErr) throw upErr;
-  const { error: rowErr } = await supabase
+  const { data: row, error: rowErr } = await supabase
     .from("photos")
-    .insert({ owner: userId, storage_path: path, position });
+    .insert({ owner: userId, storage_path: path, position })
+    .select("id")
+    .single();
   if (rowErr) throw rowErr;
+
+  // Screen it. The row lands as 'pending' (hidden to others) and this flips it
+  // to approved/flagged/rejected. Deliberately awaited — but a failure here
+  // must not lose the upload, so we swallow: the photo simply stays pending
+  // and shows up in the admin review queue.
+  try {
+    await supabase.functions.invoke("moderate-photo", { body: { photoId: row.id } });
+  } catch { /* stays pending → hidden → human review */ }
+
   return path;
 }
 
@@ -77,7 +90,7 @@ export async function uploadPhoto(userId: string, base64: string, position: numb
 export async function listOwnPhotos(userId: string): Promise<OwnPhoto[]> {
   const { data, error } = await supabase
     .from("photos")
-    .select("id, storage_path, position")
+    .select("id, storage_path, position, moderation, moderation_reason")
     .eq("owner", userId)
     .order("position");
   if (error || !data?.length) return [];
