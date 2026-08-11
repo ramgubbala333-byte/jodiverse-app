@@ -127,7 +127,7 @@ const s = StyleSheet.create({
   eyebrowPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,122,46,0.12)",
     borderWidth: 1, borderColor: "rgba(255,122,46,0.3)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
   eyebrow: { color: theme.gold, fontSize: 11, fontFamily: theme.font.bold, letterSpacing: 1.5 },
-  title: { color: theme.ink, fontSize: 32, fontFamily: theme.font.displayLg, letterSpacing: -0.5 },
+  title: { color: theme.ink, fontSize: 32, fontFamily: theme.font.display, letterSpacing: -0.5 },
   sub: { color: theme.muted, fontSize: 14, marginTop: 4, fontFamily: theme.font.medium },
   cta: { borderRadius: 999, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center",
     ...theme.shadow.cta },

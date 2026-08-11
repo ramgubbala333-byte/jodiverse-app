@@ -78,9 +78,11 @@ export default function WhyMatchedCard({ otherId, score = 94 }: { otherId: strin
     }).start();
 
     let live = true;
-    supabase.rpc("match_reasons", { other: otherId }).then(({ data }) => {
-      if (live && data && data.length > 0) setReasons(data as Reason[]);
-    }).catch(() => {});
+    // Supabase's builder is a thenable, not a real Promise — it has no
+    // .catch(). Errors come back in the response, so read them from there.
+    supabase.rpc("match_reasons", { other: otherId }).then(({ data, error }) => {
+      if (live && !error && data && data.length > 0) setReasons(data as Reason[]);
+    });
     return () => { live = false; };
   }, [otherId, gaugeScale, gaugeOpacity, pulseGlow, pillsAnim]);
 
