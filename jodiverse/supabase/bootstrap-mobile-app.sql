@@ -130,7 +130,10 @@ alter table profiles add constraint prompts_max_3
   check (jsonb_array_length(prompts) <= 3);
 
 -- ── 2. public_profiles view — final shape (profile-builder-v10.sql) ────────
-create or replace view public_profiles with (security_invoker = off) as
+-- DROP first: CREATE OR REPLACE VIEW can't change/remove existing columns,
+-- only append — and this project already has an older/different version.
+drop view if exists public_profiles cascade;
+create view public_profiles with (security_invoker = off) as
   select id, display_name,
          date_part('year', age(birthdate))::int as age,
          gender, bio, city, faith, languages, diet,
