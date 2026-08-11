@@ -12,16 +12,14 @@ import { theme } from "../theme";
 
 type Match = {
   id: string; other: string; name: string; age: number | null;
-  photo: string | null; revealed: boolean; matchedAt: string;
+  photo: string | null; matchedAt: string;
 };
 
 const REPORT_REASONS = ["Fake profile / scam", "Inappropriate messages",
   "Inappropriate photos", "Underage", "Harassment", "Other"];
 
-// Everyone you've mutually connected with — via a voice call ("talk again"
-// from both sides). Photos stay locked until the reveal ladder unlocks them,
-// same as MatchProfileScreen. This replaces the old swipe-era "who liked
-// me" screen, which no longer has any data to show in a voice-first app.
+// Everyone you've mutually liked. Photos are already known to both sides —
+// you saw them in the deck before liking — so they're shown here directly.
 export default function MatchesScreen() {
   const nav = useNavigation<any>();
   const [matches, setMatches] = useState<Match[]>([]);
@@ -46,23 +44,16 @@ export default function MatchesScreen() {
         id: m.id, other: m.a === user.id ? m.b : m.a, matchedAt: m.created_at,
       }));
       const ids = rows.map((r) => r.other);
-      const [{ data: profs }, { data: reveals }] = await Promise.all([
+      const [{ data: profs }, urls] = await Promise.all([
         supabase.from("public_profiles").select("id, display_name, age").in("id", ids),
-        supabase.from("reveal_state").select("match_id, level").in("match_id", rows.map((r) => r.id)),
+        deckPhotoUrls(ids),
       ]);
-      const revealedIds = new Set(
-        rows.filter((r) => reveals?.find((rv) => rv.match_id === r.id)?.level === "full")
-          .map((r) => r.other));
-      // Only sign photo URLs for people who've actually mutually revealed —
-      // no point fetching (or exposing) a signed URL that stays locked.
-      const urls = revealedIds.size ? await deckPhotoUrls([...revealedIds]) : {};
 
       setMatches(rows.map((r) => ({
         id: r.id, other: r.other,
         name: profs?.find((p) => p.id === r.other)?.display_name ?? "Match",
         age: profs?.find((p) => p.id === r.other)?.age ?? null,
         photo: urls[r.other] ?? null,
-        revealed: revealedIds.has(r.other),
         matchedAt: r.matchedAt,
       })));
       setLoading(false);
@@ -103,8 +94,8 @@ export default function MatchesScreen() {
 
   return (
     <View style={s.wrap}>
-      <Text style={s.title}>Your connections</Text>
-      <Text style={s.sub}>Photos stay hidden until you both choose to reveal them.</Text>
+      <Text style={s.title}>Your matches</Text>
+      <Text style={s.sub}>People you've liked each other.</Text>
 
       <Animated.View style={{ flex: 1, opacity: listIn,
         transform: [{ translateY: listIn.interpolate({ inputRange: [0, 1], outputRange: [14, 0] }) }] }}>
@@ -120,7 +111,7 @@ export default function MatchesScreen() {
           <View style={s.empty}>
             <Ionicons name="heart-outline" size={34} color={theme.muted} />
             <Text style={s.emptyText}>
-              No matches yet. Talk to someone new — if you both want to talk again, they'll show up here.
+              No matches yet. Like someone in Discover — if they like you back, they'll show up here.
             </Text>
           </View>
         ) : null}
@@ -128,27 +119,18 @@ export default function MatchesScreen() {
           <PressableScale style={s.card} haptics="light"
             onPress={() => openProfile(item)} onLongPress={() => onLongPress(item)}>
             <View style={s.cardMedia}>
-              {item.revealed && item.photo ? (
-                <>
-                  <Image source={{ uri: item.photo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
-                  <View style={s.revealedPill}>
-                    <Ionicons name="checkmark-circle" size={11} color={theme.emerald} />
-                    <Text style={s.revealedText}>REVEALED</Text>
-                  </View>
-                </>
+              {item.photo ? (
+                <Image source={{ uri: item.photo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
               ) : (
                 <View style={s.lockCircle}>
-                  <Ionicons name="lock-closed" size={22} color={theme.muted} />
+                  <Text style={s.initialText}>{item.name[0]?.toUpperCase() ?? "?"}</Text>
                 </View>
               )}
             </View>
             <Text style={s.name} numberOfLines={1}>{item.name}{item.age ? `, ${item.age}` : ""}</Text>
             <View style={s.metaRow}>
-              <Ionicons name={item.revealed ? "chatbubble-outline" : "mic-outline"}
-                size={12} color={theme.gold} />
-              <Text style={s.meta} numberOfLines={1}>
-                {item.revealed ? "Tap to chat" : "Tap to view"}
-              </Text>
+              <Ionicons name="chatbubble-outline" size={12} color={theme.gold} />
+              <Text style={s.meta} numberOfLines={1}>Tap to chat</Text>
             </View>
           </PressableScale>
         )}
@@ -166,11 +148,9 @@ const s = StyleSheet.create({
     borderRadius: theme.radii.lg, padding: 10, ...theme.shadow.card },
   cardMedia: { aspectRatio: 3 / 4, borderRadius: theme.radii.md, backgroundColor: theme.card2,
     overflow: "hidden", alignItems: "center", justifyContent: "center", marginBottom: 10 },
-  lockCircle: { width: 56, height: 56, borderRadius: 28, backgroundColor: "rgba(255,255,255,0.05)",
+  lockCircle: { width: "100%", height: "100%", backgroundColor: theme.card2,
     alignItems: "center", justifyContent: "center" },
-  revealedPill: { position: "absolute", top: 8, left: 8, flexDirection: "row", alignItems: "center",
-    gap: 4, backgroundColor: "rgba(8,10,18,0.7)", borderRadius: 999, paddingHorizontal: 8, paddingVertical: 4 },
-  revealedText: { color: theme.emerald, fontSize: 8.5, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  initialText: { color: theme.ink, fontSize: 26, fontFamily: theme.font.black },
   name: { fontSize: 15.5, fontFamily: theme.font.bold, color: theme.ink, paddingHorizontal: 2 },
   metaRow: { flexDirection: "row", alignItems: "center", gap: 5, marginTop: 4, paddingHorizontal: 2 },
   meta: { fontSize: 12, color: theme.muted, flex: 1 },

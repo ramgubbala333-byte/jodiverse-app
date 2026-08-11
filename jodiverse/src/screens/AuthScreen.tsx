@@ -14,23 +14,6 @@ import { theme } from "../theme";
 const GENDERS = ["Woman", "Man", "Non-binary"] as const;
 const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
 
-const HIGHLIGHTS = [
-  ["mic", "Voice First", "A real conversation tells you more than fifty photos ever could"],
-  ["people", "Shared Interests", "Matched on what you actually love to talk about"],
-] as const;
-
-const HOW_IT_WORKS = [
-  ["Set your vibe", "Pick what you're in the mood to talk about tonight"],
-  ["Get connected", "We instantly match you with someone who's into it too"],
-  ["Click? Become friends", "Hit it off in 10 minutes and chat anytime, free forever"],
-] as const;
-
-const STORIES = [
-  ["Priya Sharma", 27, "Met someone amazing without a single awkward photo. We just clicked on the call."],
-  ["Arjun Mehta", 31, "Ten minutes of real conversation beat months of swiping. We're still talking daily."],
-  ["Meera Iyer", 26, "No more judging looks — I finally met people for who they actually are."],
-] as const;
-
 // LoveAI-style marketing landing + "Create Your Account" (Step 1 of 4).
 // Steps 2-4 of the Smart Profile Builder live in OnboardingScreen; name,
 // birthdate and gender collected here travel via auth user metadata.
@@ -159,7 +142,7 @@ export default function AuthScreen() {
           {page === "auth" ? (
             <>
               <Text style={s.formTitle}>Log in or sign up</Text>
-              <Text style={s.formSub}>Talk first. Find your connection.</Text>
+              <Text style={s.formSub}>Find your person. For real this time.</Text>
 
               <Text style={s.fieldLabel}>Mobile number</Text>
               <View style={s.phoneRow}>
@@ -340,15 +323,15 @@ export default function AuthScreen() {
           <Text style={s.brand}>{WORDMARK}</Text>
           <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             onPress={() => Alert.alert("How it works",
-              "Tap to talk — we connect you by voice with someone who shares your vibe. No swiping, no photos up front. Click on a call? Become friends and chat anytime, free.")}>
+              "Browse real profiles — photos, prompts, and interests. Like something specific and add a comment, or just say hi. If they like you back, you match and can chat.")}>
             <Ionicons name="help-circle-outline" size={26} color={theme.muted} />
           </TouchableOpacity>
         </View>
 
-        <Text style={s.heroTitle}>Talk first.{"\n"}Find your{"\n"}connection.</Text>
+        <Text style={s.heroTitle}>Find your{"\n"}person.{"\n"}For real.</Text>
         <Text style={s.heroSub}>
-          Real voices. Real chemistry. Skip the endless swiping and start hearing the
-          soul behind the screen.
+          Real profiles, real prompts, real conversations — like something
+          specific about someone, not just a face.
         </Text>
 
         <TouchableOpacity onPress={() => setPage("auth")} activeOpacity={0.9}>
@@ -375,16 +358,6 @@ export default function AuthScreen() {
             <Text style={s.optText}>Email</Text>
           </TouchableOpacity>
         </View>
-
-        {/* waveform + testimonial */}
-        <View style={s.waveRow}>
-          {[8, 15, 10, 22, 14, 28, 18, 32, 20, 12, 24, 10, 16, 9].map((h, i) => (
-            <View key={i} style={[s.waveBar, { height: h }]} />
-          ))}
-        </View>
-        <Text style={s.quote}>
-          "I fell in love with his laugh before I even knew what he looked like."
-        </Text>
 
         <Text style={s.legal}>
           By continuing you accept our Community Guidelines & Terms of Use. We never sell your data.

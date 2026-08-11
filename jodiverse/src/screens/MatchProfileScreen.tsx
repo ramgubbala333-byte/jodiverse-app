@@ -30,21 +30,9 @@ const fmtHeight = (cm: number) =>
 const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
 
-const TRAIT_LABEL: Record<string, string> = {
-  good_listener: "🎧 Good listener", funny: "😄 Funny", curious: "🔍 Curious",
-  storyteller: "📖 Storyteller", calm: "🌿 Calm", warm: "💛 Warm",
-  easy_going: "😌 Easy to talk to", talkative: "💬 Talkative",
-  concise: "⚡ Concise", engaged: "✅ Engaged",
-};
-const BAND: Record<string, [string, string]> = {
-  ready: ["Ready to meet", "You two are clicking — time to plan something in person."],
-  warming_up: ["Warming up", "A couple more chats and you'll be there."],
-  early: ["Just getting started", "Talk more to build a real connection first."],
-};
-
-// Full profile of a match: all photos, details, photo comments (sent into
-// the chat), and a secure-calling stub (real calls need WebRTC infra — an
-// in-app relay so phone numbers are never exchanged; roadmap).
+// Full profile of a match: all photos (already seen in the deck before you
+// matched — no reveal gating needed), details, and photo comments sent
+// straight into the chat.
 export default function MatchProfileScreen() {
   const { otherId, name, matchId, self } = useRoute().params as Params;
   const nav = useNavigation<any>();
@@ -58,12 +46,6 @@ export default function MatchProfileScreen() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
   const [voicePlaying, setVoicePlaying] = useState(false);
-  const [revealLevel, setRevealLevel] = useState<"locked" | "blurred" | "full">("locked");
-  const [youOptedIn, setYouOptedIn] = useState(false);
-  const [revealBusy, setRevealBusy] = useState(false);
-  const [traits, setTraits] = useState<Record<string, number>>({});
-  const [readiness, setReadiness] = useState<any>(null);
-  const [subscribed, setSubscribed] = useState(false);
 
   // Intro video: autoplay muted loop, Bumble-style; tap the speaker for sound.
   const videoPlayer = useVideoPlayer(null, (p) => { p.loop = true; p.muted = true; });
@@ -124,39 +106,6 @@ export default function MatchProfileScreen() {
     })();
   }, [prof?.video_path, prof?.audio_path]);
 
-  // Intelligence layer: conversation traits, reveal state, date readiness.
-  useEffect(() => {
-    if (self) return;
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      const [{ data: tr }, { data: sub }] = await Promise.all([
-        supabase.rpc("get_traits", { uid: otherId }),
-        user ? supabase.from("subscriptions").select("tier").eq("user_id", user.id)
-          .gt("expires_at", new Date().toISOString()).maybeSingle() : Promise.resolve({ data: null }),
-      ]);
-      if (tr && tr[0]?.traits) setTraits(tr[0].traits);
-      setSubscribed(!!sub);
-      if (matchId) {
-        const { data: rv } = await supabase.rpc("get_reveal", { p_match: matchId });
-        if (rv) { setRevealLevel(rv.level); setYouOptedIn(rv.you_opted_in); }
-        const { data: rd } = await supabase.rpc("date_readiness", { other: otherId });
-        setReadiness(rd);
-      }
-    })();
-  }, [otherId, matchId, self]);
-
-  const revealPhotos = async () => {
-    if (!matchId) return;
-    setRevealBusy(true);
-    const { data, error } = await supabase.rpc("advance_reveal", { p_match: matchId });
-    setRevealBusy(false);
-    if (error || !data) { Alert.alert("Couldn't reveal", error?.message ?? "Try again."); return; }
-    setRevealLevel(data.level); setYouOptedIn(data.you_opted_in);
-    Alert.alert(data.level === "full" ? "Photos revealed 📸" : "Reveal sent",
-      data.level === "full" ? "You can both see each other now."
-        : "They'll see your photos once they reveal theirs too.");
-  };
-
   const sendComment = async () => {
     const text = comment.trim();
     if (!text || commentOn === null) return;
@@ -177,78 +126,12 @@ export default function MatchProfileScreen() {
     }
   };
 
-  const call = () => {
-    Alert.alert("Secure calling — coming soon",
-      "Voice calls will run inside Dosti Connect so your phone number is never shared. " +
-      "Until then, keep chatting here — never share your number with someone you haven't met.");
-  };
-
   if (loading) return <View style={s.center}><ActivityIndicator color={theme.rose} /></View>;
   if (!prof) return <View style={s.center}><Text style={{ color: theme.muted }}>Profile unavailable.</Text></View>;
 
   const interests = prof.interests ?? [];
-  const showPhotos = self || revealLevel === "full";
-  const topTraits = Object.entries(traits)
-    .filter(([k]) => TRAIT_LABEL[k]).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
-  const lockedPhotoCard = (
-    <View style={[s.photoCard, s.lockedCard]}>
-      <Ionicons name="lock-closed" size={30} color={theme.muted} />
-      <Text style={s.lockedTitle}>Photos hidden</Text>
-      <Text style={s.lockedSub}>
-        {matchId
-          ? youOptedIn ? "Waiting for them to reveal too…" : "Reveal yours to unlock theirs."
-          : "Voice first — you'll see photos after you connect on a call."}
-      </Text>
-      {matchId && !youOptedIn && (
-        <TouchableOpacity style={s.revealBtn} onPress={revealPhotos} disabled={revealBusy}>
-          {revealBusy ? <ActivityIndicator color={theme.onGold} />
-            : <Text style={s.revealBtnText}>Reveal my photos</Text>}
-        </TouchableOpacity>
-      )}
-    </View>
-  );
-
-  const traitsCard = topTraits.length > 0 && (
-    <View style={s.card}>
-      <Text style={s.eyebrow}>Conversation style</Text>
-      <View style={s.chipWrap}>
-        {topTraits.map(([k]) => (
-          <View key={k} style={s.traitChip}><Text style={s.traitChipText}>{TRAIT_LABEL[k]}</Text></View>
-        ))}
-      </View>
-      <Text style={s.traitNote}>From what past call partners said — never from how they sound.</Text>
-    </View>
-  );
-
-  const readinessCard = matchId && readiness && (
-    subscribed ? (
-      <View style={s.card}>
-        <Text style={s.eyebrow}>Date readiness</Text>
-        <Text style={s.bandTitle}>{BAND[readiness.band]?.[0]}</Text>
-        <Text style={s.bandSub}>{BAND[readiness.band]?.[1]}</Text>
-        <View style={s.factorRow}>
-          <View style={s.factor}><Text style={s.factorNum}>{readiness.calls_together}</Text>
-            <Text style={s.factorLbl}>calls</Text></View>
-          <View style={s.factor}><Text style={s.factorNum}>{readiness.shared_interests}</Text>
-            <Text style={s.factorLbl}>shared</Text></View>
-          <View style={s.factor}><Text style={s.factorNum}>{readiness.avg_rating || "–"}</Text>
-            <Text style={s.factorLbl}>avg ★</Text></View>
-        </View>
-      </View>
-    ) : (
-      <TouchableOpacity style={[s.card, s.lockedReadiness]} onPress={() => nav.navigate("Paywall")}>
-        <Ionicons name="sparkles" size={18} color={theme.gold} />
-        <View style={{ flex: 1 }}>
-          <Text style={s.bandTitle}>Date readiness</Text>
-          <Text style={s.bandSub}>See how compatible you two are becoming — with Premium.</Text>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color={theme.muted} />
-      </TouchableOpacity>
-    )
-  );
-
-  // Hinge-style facts strip: icon + value cells, horizontally scrollable.
+  // Facts strip: icon + value cells, horizontally scrollable.
   const facts = [
     prof.is_verified && "✅ Verified",
     `🎂 ${prof.age}`,
@@ -321,15 +204,11 @@ export default function MatchProfileScreen() {
         </View>
       )}
 
-      {/* photos gated by the reveal ladder; traits + readiness surface first */}
-      {readinessCard}
-      {traitsCard}
-
-      {showPhotos ? (photos.length ? photoCard(0) : (
+      {photos.length ? photoCard(0) : (
         <LinearGradient colors={[...theme.grad]} style={[s.photoCard, s.photoEmpty]}>
           <Text style={s.initial}>{prof.display_name[0]}</Text>
         </LinearGradient>
-      )) : lockedPhotoCard}
+      )}
 
       {prof.bio ? (
         <View style={s.card}>
@@ -349,7 +228,7 @@ export default function MatchProfileScreen() {
         </View>
       )}
 
-      {showPhotos && photos.length > 1 && photoCard(1)}
+      {photos.length > 1 && photoCard(1)}
 
       {interests.length ? (
         <View style={s.card}>
@@ -362,7 +241,7 @@ export default function MatchProfileScreen() {
         </View>
       ) : null}
 
-      {showPhotos && photos.slice(2).map((_, k) => photoCard(k + 2))}
+      {photos.slice(2).map((_, k) => photoCard(k + 2))}
 
       <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
         {self ? (
@@ -370,16 +249,12 @@ export default function MatchProfileScreen() {
             👁 This is how your profile appears to people you match with.
           </Text>
         ) : !matchId ? null : (
-        <View style={s.actions}>
-          <TouchableOpacity style={s.actGhost} onPress={() => nav.goBack()}>
-            <Ionicons name="chatbubbles" size={18} color={theme.gold} />
-            <Text style={s.actGhostText}>Chat</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={s.actGold} onPress={call}>
-            <Ionicons name="call" size={18} color={theme.onGold} />
-            <Text style={s.actGoldText}>Call (soon)</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity onPress={() => nav.goBack()}>
+          <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.actGold}>
+            <Ionicons name="chatbubbles" size={18} color="#fff" />
+            <Text style={s.actGoldText}>Message</Text>
+          </LinearGradient>
+        </TouchableOpacity>
         )}
       </View>
 
@@ -450,33 +325,11 @@ const s = StyleSheet.create({
   chip: { borderWidth: 1, borderColor: "rgba(236,72,153,.5)", backgroundColor: theme.goldSoft,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   chipText: { color: theme.gold, fontSize: 12, fontFamily: theme.font.semibold },
-  lockedCard: { alignItems: "center", justifyContent: "center", gap: 8, padding: 24 },
-  lockedTitle: { color: theme.ink, fontSize: 18, fontFamily: theme.font.displayMd },
-  lockedSub: { color: theme.muted, fontSize: 13, textAlign: "center", lineHeight: 19,
-    paddingHorizontal: 20 },
-  revealBtn: { backgroundColor: theme.gold, borderRadius: 999, paddingHorizontal: 22,
-    paddingVertical: 13, marginTop: 8, minWidth: 160, alignItems: "center", ...theme.shadow.cta },
-  revealBtnText: { color: theme.onGold, fontFamily: theme.font.black, fontSize: 14 },
-  traitChip: { borderWidth: 1, borderColor: theme.line, backgroundColor: theme.card2,
-    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  traitChipText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.semibold },
-  traitNote: { color: theme.muted, fontSize: 11, marginTop: 10, lineHeight: 15 },
-  bandTitle: { color: theme.ink, fontSize: 18, fontFamily: theme.font.displayMd },
-  bandSub: { color: theme.muted, fontSize: 13, marginTop: 4, lineHeight: 18 },
-  factorRow: { flexDirection: "row", gap: 24, marginTop: 14 },
-  factor: { alignItems: "center" },
-  factorNum: { color: theme.gold, fontSize: 20, fontFamily: theme.font.black },
-  factorLbl: { color: theme.muted, fontSize: 11, marginTop: 2 },
-  lockedReadiness: { flexDirection: "row", alignItems: "center", gap: 12 },
   previewNote: { color: theme.muted, fontSize: 13, textAlign: "center", marginTop: 24,
     lineHeight: 19 },
-  actions: { flexDirection: "row", gap: 10, marginTop: 24 },
-  actGhost: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderWidth: 1, borderColor: theme.gold, borderRadius: 999, paddingVertical: 15 },
-  actGhostText: { color: theme.gold, fontFamily: theme.font.bold, fontSize: 14 },
-  actGold: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, backgroundColor: theme.gold, borderRadius: 999, paddingVertical: 15, ...theme.shadow.cta },
-  actGoldText: { color: theme.onGold, fontFamily: theme.font.bold, fontSize: 14 },
+  actGold: { flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 8, borderRadius: 999, paddingVertical: 16, marginTop: 24, ...theme.shadow.cta },
+  actGoldText: { color: "#fff", fontFamily: theme.font.bold, fontSize: 15 },
   modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,.6)", justifyContent: "center", padding: 24 },
   modalCard: { backgroundColor: theme.card, borderRadius: theme.radii.xl, padding: 20,
     borderWidth: 1, borderColor: theme.line, ...theme.shadow.floating },

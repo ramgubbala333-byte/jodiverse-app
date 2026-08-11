@@ -10,8 +10,8 @@ import PressableScale from "../components/PressableScale";
 import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
-// Fair pricing: subscriptions sell REACH and INSIGHT, never a person's time.
-// Talking is free for everyone — 3 calls/day, unlimited (fair-use) here.
+// Fair pricing: subscriptions sell REACH and INSIGHT, never access to people.
+// Swiping, liking, matching and chatting are free for everyone.
 // Purchases arrive with RevenueCat — the webhook already writes subscriptions.
 type Plan = { months: number; label: string; perMonth: number; save?: number };
 type Tier = {
@@ -24,14 +24,14 @@ const TIERS: Tier[] = [
     key: "plus", name: "Plus", color: theme.gold, popular: true,
     tagline: "For meeting more people, faster",
     perks: [
-      "Unlimited voice calls (fair-use, 30/day)",
-      "Priority matching — front of the queue",
+      "Unlimited likes (no daily cap)",
+      "See who already likes you",
+      "Rewind your last swipe",
+      "Priority placement in the deck",
       "Advanced filters: intent, lifestyle, language",
       "Travel Mode — match in any city",
       "Weekly profile Boost",
       "Read receipts · Incognito mode",
-      "Compatibility & Date Readiness insights",
-      "Unlimited Lounge speaking · Premium badge",
     ],
     plans: [
       { months: 1, label: "Monthly", perMonth: 249 },
@@ -44,10 +44,9 @@ const TIERS: Tier[] = [
     tagline: "For serious daters who want an edge",
     perks: [
       "Everything in Plus",
-      "Highest-priority queue placement",
-      "Unlimited scheduled voice dates",
+      "Unlimited Super Likes with comments",
+      "Top placement — seen before anyone else",
       "Advanced AI compatibility scoring",
-      "Exclusive Lounges · higher visibility",
       "Profile optimization review",
       "Early access to new features",
     ],
@@ -73,11 +72,11 @@ export default function PaywallScreen() {
       <GlowBackdrop />
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 40 + insets.bottom }}>
       <Text style={s.h1}>Deepen the{"\n"}connection</Text>
-      <Text style={s.sub}>Premium tools built for high-intent, voice-first dating. Reach and insight — never a person's time.</Text>
+      <Text style={s.sub}>Premium tools built for high-intent dating. Reach and insight — never access to people.</Text>
 
       <View style={s.freePill}>
-        <Ionicons name="mic" size={15} color={theme.gold} />
-        <Text style={s.freePillText}>TALKING IS ALWAYS FREE</Text>
+        <Ionicons name="heart" size={15} color={theme.gold} />
+        <Text style={s.freePillText}>SWIPING & MATCHING ARE ALWAYS FREE</Text>
       </View>
 
       {/* tier selector — selected tab fills with the tier colour */}

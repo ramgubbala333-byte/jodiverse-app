@@ -8,7 +8,7 @@ import { deckPhotoUrls } from "../lib/photos";
 import { theme } from "../theme";
 
 type M = { id: string; other: string; other_name: string; photo: string | null;
-  revealed: boolean; last: string | null; matched_at: string };
+  last: string | null; matched_at: string };
 
 const REPORT_REASONS = ["Fake profile / scam", "Inappropriate messages",
   "Inappropriate photos", "Underage", "Harassment", "Other"];
@@ -40,16 +40,10 @@ export default function ChatsScreen() {
         id: m.id, other: m.a === user.id ? m.b : m.a, matched_at: m.created_at,
       }));
       const ids = others.map((o) => o.other);
-      const [{ data: profs }, { data: reveals }] = await Promise.all([
+      const [{ data: profs }, urls] = await Promise.all([
         supabase.from("public_profiles").select("id, display_name").in("id", ids),
-        supabase.from("reveal_state").select("match_id, level").in("match_id", others.map((o) => o.id)),
+        deckPhotoUrls(ids),
       ]);
-      const revealedIds = new Set(
-        others.filter((o) => reveals?.find((rv) => rv.match_id === o.id)?.level === "full")
-          .map((o) => o.other));
-      // Only sign photo URLs for people who've mutually revealed — locked
-      // matches show initials instead, same rule as MatchProfileScreen.
-      const urls = revealedIds.size ? await deckPhotoUrls([...revealedIds]) : {};
       // Last message per match — fine at this scale; page it later.
       const lasts = await Promise.all(others.map(async (o) => {
         const { data: msg } = await supabase.from("messages")
@@ -62,7 +56,6 @@ export default function ChatsScreen() {
         other: o.other,
         other_name: profs?.find((p) => p.id === o.other)?.display_name ?? "Match",
         photo: urls[o.other] ?? null,
-        revealed: revealedIds.has(o.other),
         last: lasts[i],
         matched_at: o.matched_at,
       })));
@@ -97,7 +90,7 @@ export default function ChatsScreen() {
   const openerFor = (st: Stale) =>
     st.shared_interest
       ? `Hey ${st.other_name}! We both love ${st.shared_interest.toLowerCase()} — what got you into it?`
-      : `Hey ${st.other_name}! Really enjoyed talking the other day — how's your week going?`;
+      : `Hey ${st.other_name}! How's your week going?`;
 
   const sayHi = async (st: Stale) => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -116,27 +109,15 @@ export default function ChatsScreen() {
   const newJodis = filtered.filter((m) => !m.last);       // matched, not yet chatting
   const convos = filtered.filter((m) => !!m.last);        // active conversations
 
-  // Photo shown once mutually revealed; otherwise the person's initial — NOT a
-  // padlock. A lock icon reads as "you're blocked", but chat is always open here;
-  // photos are just hidden until you both reveal (a tiny badge hints at that).
-  const Avatar = ({ m, size }: { m: M; size: number }) => m.revealed && m.photo ? (
+  const Avatar = ({ m, size }: { m: M; size: number }) => m.photo ? (
     <Image source={{ uri: m.photo }} style={{ width: size, height: size, borderRadius: size / 2 }} />
   ) : (
-    <View>
-      <View style={{ width: size, height: size, borderRadius: size / 2,
-        backgroundColor: AVATAR_COLORS[(m.other_name.charCodeAt(0) || 0) % AVATAR_COLORS.length],
-        alignItems: "center", justifyContent: "center" }}>
-        <Text style={{ color: "#fff", fontWeight: "800", fontSize: size / 2.6 }}>
-          {m.other_name[0]?.toUpperCase() ?? "?"}
-        </Text>
-      </View>
-      {!m.revealed && (
-        <View style={{ position: "absolute", right: -1, bottom: -1, width: size / 3, height: size / 3,
-          borderRadius: size / 6, backgroundColor: theme.card, alignItems: "center", justifyContent: "center",
-          borderWidth: 1.5, borderColor: theme.bg }}>
-          <Ionicons name="lock-closed" size={size / 6} color={theme.muted} />
-        </View>
-      )}
+    <View style={{ width: size, height: size, borderRadius: size / 2,
+      backgroundColor: AVATAR_COLORS[(m.other_name.charCodeAt(0) || 0) % AVATAR_COLORS.length],
+      alignItems: "center", justifyContent: "center" }}>
+      <Text style={{ color: "#fff", fontWeight: "800", fontSize: size / 2.6 }}>
+        {m.other_name[0]?.toUpperCase() ?? "?"}
+      </Text>
     </View>
   );
 
@@ -154,13 +135,13 @@ export default function ChatsScreen() {
         <View style={s.nudge}>
           <View style={s.nudgeHead}>
             <Ionicons name="sparkles" size={15} color={theme.gold} />
-            <Text style={s.nudgeTitle}>You both wanted to keep talking</Text>
+            <Text style={s.nudgeTitle}>You matched — say hi!</Text>
             <TouchableOpacity onPress={() => setDismissed((d) => new Set(d).add(nudge.match_id))}>
               <Ionicons name="close" size={16} color={theme.muted} />
             </TouchableOpacity>
           </View>
           <Text style={s.nudgeBody}>
-            You and {nudge.other_name} clicked but never messaged. Break the ice:
+            You and {nudge.other_name} matched but haven't messaged yet. Break the ice:
           </Text>
           <Text style={s.nudgeOpener}>"{openerFor(nudge)}"</Text>
           <View style={s.nudgeRow}>
@@ -195,7 +176,7 @@ export default function ChatsScreen() {
         keyExtractor={(m) => m.id}
         ListEmptyComponent={
           <Text style={s.empty}>
-            {matches.length ? "Say hi to your new friends above 👆" : "Talk to someone to start chatting."}
+            {matches.length ? "Say hi to your new friends above 👆" : "Match with someone in Discover to start chatting."}
           </Text>
         }
         renderItem={({ item }) => (

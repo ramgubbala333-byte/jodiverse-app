@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { AppState, StatusBar, View, StyleSheet, Text, TextInput } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFonts } from "expo-font";
 import { Unbounded_700Bold, Unbounded_800ExtraBold } from "@expo-google-fonts/unbounded";
@@ -18,17 +17,11 @@ import { updateGeoCell } from "./src/lib/geo";
 import { theme } from "./src/theme";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
-import QueueScreen from "./src/screens/QueueScreen";
-import CallScreen from "./src/screens/CallScreen";
-import PostCallScreen from "./src/screens/PostCallScreen";
+import DiscoverScreen from "./src/screens/DiscoverScreen";
 import MatchedScreen from "./src/screens/MatchedScreen";
-import VoiceProfileScreen from "./src/screens/VoiceProfileScreen";
 import CoinsScreen from "./src/screens/CoinsScreen";
 import ReferralScreen from "./src/screens/ReferralScreen";
 import TransactionsScreen from "./src/screens/TransactionsScreen";
-import LoungesScreen from "./src/screens/LoungesScreen";
-import LoungeRoomScreen from "./src/screens/LoungeRoomScreen";
-import CallSettingsScreen from "./src/screens/CallSettingsScreen";
 import MatchesScreen from "./src/screens/MatchesScreen";
 import ChatsScreen from "./src/screens/ChatsScreen";
 import ChatScreen from "./src/screens/ChatScreen";
@@ -66,20 +59,18 @@ function applyGlobalFont() {
 }
 
 const ICONS: Record<string, [string, string]> = {
-  Lounges: ["radio", "radio-outline"],
+  Discover: ["flame", "flame-outline"],
   Matches: ["heart", "heart-outline"],
-  Talk: ["mic", "mic-outline"],
   Chat: ["chatbubbles", "chatbubbles-outline"],
   Profile: ["person", "person-outline"],
 };
 
-// Voice-first tabs. Talk (the queue) is the centre of the product and gets
-// the raised amber button — everything else supports it.
+// Standard 4-tab layout: Discover (the curated deck) is home.
 function Tabs() {
   const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
-      initialRouteName="Talk"
+      initialRouteName="Discover"
       screenListeners={{ tabPress: () => haptic.select() }}
       screenOptions={({ route }) => ({
         headerShown: false,
@@ -100,32 +91,13 @@ function Tabs() {
         ),
       })}
     >
-      <Tab.Screen name="Lounges" component={LoungesScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} />
       <Tab.Screen name="Matches" component={MatchesScreen} />
-      <Tab.Screen name="Talk" component={QueueScreen}
-        options={{
-          tabBarIcon: ({ focused }) => (
-            <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={[tabS.fab, !focused && tabS.fabDim]}>
-              <Ionicons name={focused ? "mic" : "mic-outline"} size={30} color={theme.onGold} />
-            </LinearGradient>
-          ),
-        }} />
       <Tab.Screen name="Chat" component={ChatsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );
 }
-
-const tabS = StyleSheet.create({
-  // Raised amber circle floating above the tab bar — the voice queue.
-  fab: { top: -20, width: 62, height: 62, borderRadius: 31,
-    alignItems: "center", justifyContent: "center",
-    borderWidth: 4, borderColor: theme.bg,
-    shadowColor: theme.gold, shadowOpacity: 0.55, shadowRadius: 14,
-    shadowOffset: { width: 0, height: 6 }, elevation: 12 },
-  fabDim: { opacity: 0.92 },
-});
 
 const navTheme = {
   ...DefaultTheme,
@@ -211,16 +183,8 @@ export default function App() {
               options={({ route }: any) => ({ headerShown: true,
                 title: route.params?.name ?? "Profile", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } })} />
-            {/* Voice flow — full-screen, no headers, no going back mid-call */}
-            <Stack.Screen name="Call" component={CallScreen}
-              options={{ gestureEnabled: false, animation: "fade" }} />
-            <Stack.Screen name="PostCall" component={PostCallScreen}
-              options={{ gestureEnabled: false }} />
             <Stack.Screen name="Matched" component={MatchedScreen}
               options={{ gestureEnabled: false, animation: "fade" }} />
-            <Stack.Screen name="VoiceProfile" component={VoiceProfileScreen}
-              options={{ headerShown: true, title: "Voice intro", headerTintColor: theme.ink,
-                headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Coins" component={CoinsScreen}
               options={{ headerShown: true, title: "Coins", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card }, presentation: "modal" }} />
@@ -229,11 +193,6 @@ export default function App() {
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Transactions" component={TransactionsScreen}
               options={{ headerShown: true, title: "Coin history", headerTintColor: theme.ink,
-                headerStyle: { backgroundColor: theme.card } }} />
-            <Stack.Screen name="LoungeRoom" component={LoungeRoomScreen}
-              options={{ gestureEnabled: true, animation: "slide_from_bottom" }} />
-            <Stack.Screen name="CallSettings" component={CallSettingsScreen}
-              options={{ headerShown: true, title: "Call & safety", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Settings" component={SettingsScreen}
               options={{ headerShown: true, title: "Settings", headerTintColor: theme.ink,

@@ -24,7 +24,7 @@ const PACKS: Pack[] = [
 ];
 
 // Coins are COSMETIC ONLY — gifts, boosts, themes, decorations. They can
-// never buy call time, messaging, safety, or matching. Talking stays free.
+// never buy likes, matches, messaging, verification, or safety.
 export default function CoinsScreen() {
   const nav = useNavigation<any>();
   const insets = useSafeAreaInsets();
@@ -90,7 +90,7 @@ export default function CoinsScreen() {
       <View style={s.infoBanner}>
         <Ionicons name="information-circle-outline" size={18} color={theme.rose} />
         <Text style={s.infoBannerText}>
-          Coins are just for gifts and fun — they never buy call time, messages or matching.
+          Coins are just for gifts and fun — they never buy likes, matches, or messages.
         </Text>
       </View>
 
@@ -139,10 +139,10 @@ export default function CoinsScreen() {
       <View style={s.spendCard}>
         <Text style={s.spendLabel}>WHAT COINS ARE FOR</Text>
         {[
-          ["gift", "Send gifts in chat — a little spark for someone you're talking to"],
-          ["flash", "Boost your profile in the queue for 30 minutes"],
+          ["gift", "Send gifts in chat — a little spark for a match you're talking to"],
+          ["flash", "Boost your profile to the top of the deck for 30 minutes"],
           ["color-palette", "Unlock profile themes and decorations"],
-          ["ticket", "Grab tickets to exclusive Lounge events"],
+          ["star", "Send a Super Like with a comment they see instantly"],
         ].map(([icon, label]) => (
           <View key={label} style={s.spendRow}>
             <Ionicons name={icon as any} size={16} color={theme.gold} />
@@ -154,7 +154,7 @@ export default function CoinsScreen() {
       <View style={s.neverCard}>
         <Ionicons name="shield-checkmark" size={16} color={theme.emerald} />
         <Text style={s.neverText}>
-          Coins can never buy call time, messages, verification, or matching —
+          Coins can never buy likes, messages, verification, or matching —
           those are free for everyone, forever.
         </Text>
       </View>
