@@ -193,7 +193,11 @@ export default function App() {
         ) : (
           <>
             <Stack.Screen name="Tabs" component={Tabs} />
-            <Stack.Screen name="Chat" component={ChatScreen}
+            {/* NOTE: must NOT be named "Chat" — the bottom tab hosting the
+                chat LIST already owns that route name. navigate("Chat") from
+                inside that tab resolves to the tab itself (a no-op), so the
+                conversation never opens. Hence "ChatRoom". */}
+            <Stack.Screen name="ChatRoom" component={ChatScreen}
               options={{ headerShown: true, headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="MatchProfile" component={MatchProfileScreen}

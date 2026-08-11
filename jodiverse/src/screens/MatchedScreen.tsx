@@ -92,7 +92,7 @@ export default function MatchedScreen() {
 
         <PressableScale
           style={{ width: "100%" }}
-          onPress={() => nav.replace("Chat", { matchId, name })}
+          onPress={() => nav.replace("ChatRoom", { matchId, name })}
           haptics="success"
           scaleTo={0.96}
         >

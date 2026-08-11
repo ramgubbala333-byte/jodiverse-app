@@ -99,7 +99,7 @@ export default function ChatsScreen() {
       match_id: st.match_id, sender: user.id, body: openerFor(st),
     });
     setStale((xs) => xs.filter((x) => x.match_id !== st.match_id));
-    nav.navigate("Chat", { matchId: st.match_id, name: st.other_name, otherId: st.other_id });
+    nav.navigate("ChatRoom", { matchId: st.match_id, name: st.other_name, otherId: st.other_id });
   };
 
   const nudge = stale.find((st) => !dismissed.has(st.match_id));
@@ -149,7 +149,7 @@ export default function ChatsScreen() {
               <Text style={s.nudgeSendText}>Send this</Text>
             </TouchableOpacity>
             <TouchableOpacity style={s.nudgeGhost}
-              onPress={() => nav.navigate("Chat",
+              onPress={() => nav.navigate("ChatRoom",
                 { matchId: nudge.match_id, name: nudge.other_name, otherId: nudge.other_id })}>
               <Text style={s.nudgeGhostText}>Write my own</Text>
             </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function ChatsScreen() {
         contentContainerStyle={{ gap: 14, paddingRight: 10 }}>
         {newJodis.map((m) => (
           <TouchableOpacity key={m.id} style={s.newItem}
-            onPress={() => nav.navigate("Chat", { matchId: m.id, name: m.other_name, otherId: m.other })}
+            onPress={() => nav.navigate("ChatRoom", { matchId: m.id, name: m.other_name, otherId: m.other })}
             onLongPress={() => onLongPress(m)}>
             <View style={s.newRing}><Avatar m={m} size={62} /></View>
             <Text style={s.newName} numberOfLines={1}>{m.other_name}</Text>
@@ -187,7 +187,7 @@ export default function ChatsScreen() {
               <Avatar m={item} size={54} />
             </TouchableOpacity>
             <TouchableOpacity style={{ flex: 1 }}
-              onPress={() => nav.navigate("Chat",
+              onPress={() => nav.navigate("ChatRoom",
                 { matchId: item.id, name: item.other_name, otherId: item.other })}
               onLongPress={() => onLongPress(item)}>
               <Text style={s.name}>{item.other_name}</Text>
