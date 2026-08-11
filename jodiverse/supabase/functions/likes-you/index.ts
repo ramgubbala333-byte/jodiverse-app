@@ -111,7 +111,10 @@ Deno.serve(async (req) => {
           const { data: signed } = await admin.storage.from("photos").createSignedUrl(path, 1800);
           url = signed?.signedUrl ?? null;
         }
-        return { ...base, free: true, photo: url,
+        // `id` matters: the client opens their profile with it. Without it the
+        // free reveal falls through to the paywall branch — i.e. tapping your
+        // one free look would upsell you, the exact opposite of the intent.
+        return { ...base, id: l.swiper, free: true, photo: url,
           name: prof?.display_name ?? "Someone", age: prof ? age(prof.birthdate) : null };
       }
       if (!path) return { ...base, free: false, photo: null };

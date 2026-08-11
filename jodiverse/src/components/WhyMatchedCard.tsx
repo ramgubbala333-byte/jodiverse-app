@@ -20,12 +20,13 @@ const ICON_MAP: Record<string, string> = {
 
 const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
 
-export default function WhyMatchedCard({ otherId, score = 94 }: { otherId: string; score?: number }) {
-  const [reasons, setReasons] = useState<Reason[]>([
-    { icon: "flame", text: "Both love indie music" },
-    { icon: "time", text: "Early risers" },
-    { icon: "restaurant", text: "Culinary enthusiasts" },
-  ]);
+// Everything shown here is computed from data both people actually gave us.
+// No placeholder reasons and no invented score — if we can't compute it, we
+// don't show it. A fabricated "94% · our AI detected…" is worse than nothing:
+// it's the exact thing that makes these apps feel like a slot machine.
+export default function WhyMatchedCard({ otherId }: { otherId: string }) {
+  const [reasons, setReasons] = useState<Reason[]>([]);
+  const [score, setScore] = useState<number | null>(null);
 
   // Animation values
   const gaugeScale = useRef(new Animated.Value(0.6)).current;
@@ -83,8 +84,15 @@ export default function WhyMatchedCard({ otherId, score = 94 }: { otherId: strin
     supabase.rpc("match_reasons", { other: otherId }).then(({ data, error }) => {
       if (live && !error && data && data.length > 0) setReasons(data as Reason[]);
     });
+    supabase.rpc("match_score_pct", { other: otherId }).then(({ data, error }) => {
+      if (live && !error && typeof data === "number") setScore(data);
+    });
     return () => { live = false; };
   }, [otherId, gaugeScale, gaugeOpacity, pulseGlow, pillsAnim]);
+
+  // Nothing real to say yet (new profiles, or no overlap we can name) —
+  // render nothing rather than an empty card with a bare header.
+  if (score === null && reasons.length === 0) return null;
 
   return (
     <View style={s.card}>
@@ -94,29 +102,37 @@ export default function WhyMatchedCard({ otherId, score = 94 }: { otherId: strin
         <Text style={s.title}>Why You Matched</Text>
       </View>
 
-      {/* Percentage Gauge & Potential Summary */}
-      <View style={s.gaugeRow}>
-        <Animated.View
-          style={[
-            s.gaugeCircle,
-            {
-              opacity: gaugeOpacity,
-              transform: [
-                { scale: Animated.multiply(gaugeScale, pulseGlow) },
-              ],
-            },
-          ]}
-        >
-          <Text style={s.gaugeNumber}>{score}<Text style={s.percentSymbol}>%</Text></Text>
-        </Animated.View>
+      {/* Score gauge — only rendered when there's enough real signal to
+          compute one. No score is better than a made-up score. */}
+      {score !== null && (
+        <View style={s.gaugeRow}>
+          <Animated.View
+            style={[
+              s.gaugeCircle,
+              {
+                opacity: gaugeOpacity,
+                transform: [
+                  { scale: Animated.multiply(gaugeScale, pulseGlow) },
+                ],
+              },
+            ]}
+          >
+            <Text style={s.gaugeNumber}>{score}<Text style={s.percentSymbol}>%</Text></Text>
+          </Animated.View>
 
-        <View style={s.gaugeTextCol}>
-          <Text style={s.gaugeHeading}>Deep Connect on Potential</Text>
-          <Text style={s.gaugeDesc}>
-            Our AI notes a strong alignment in your conversational rhythms and shared values regarding family and career ambition.
-          </Text>
+          <View style={s.gaugeTextCol}>
+            <Text style={s.gaugeHeading}>
+              {score >= 85 ? "Strong compatibility"
+                : score >= 70 ? "Good compatibility"
+                : "Some common ground"}
+            </Text>
+            <Text style={s.gaugeDesc}>
+              Based on your questionnaire answers, shared interests and languages —
+              the specifics are below.
+            </Text>
+          </View>
         </View>
-      </View>
+      )}
 
       {/* Trait & Interest Pills (Animated Slide Up) */}
       <Animated.View

@@ -15,6 +15,15 @@ import { theme } from "../theme";
 
 const AUDIO_MAX_S = 30;
 const MAX_PROMPTS = 3;
+const MAX_TRAITS = 6;
+
+// Kept in sync with OnboardingScreen — same options, so a profile edited
+// here can never end up with a value the signup flow wouldn't produce.
+const LOVE_LANGUAGES = ["Physical Touch", "Words of Affirmation", "Acts of Service",
+  "Quality Time", "Receiving Gifts"];
+const WORKOUTS = ["Often", "Sometimes", "Rarely"];
+const TRAIT_OPTIONS = ["Adventurous", "Flexible", "Active Listener", "Easy Going", "Caring",
+  "Courageous", "Foodie", "Ambitious", "Funny", "Creative", "Loyal", "Curious"];
 
 // Preset prompt questions — Hinge-style. Likes on prompts convert to real
 // dates ~47% better than likes on photos alone (2024 industry data), so this
@@ -28,13 +37,6 @@ const PROMPT_QUESTIONS = [
 ];
 
 type Prompt = { q: string; a: string };
-
-const TRAIT_LABEL: Record<string, string> = {
-  good_listener: "🎧 Good listener", funny: "😄 Funny", curious: "🔍 Curious",
-  storyteller: "📖 Storyteller", calm: "🌿 Calm", warm: "💛 Warm",
-  easy_going: "😌 Easy to talk to", talkative: "💬 Talkative",
-  concise: "⚡ Concise", engaged: "✅ Engaged",
-};
 
 const ageFrom = (birthdate?: string | null) => {
   if (!birthdate) return null;
@@ -57,7 +59,9 @@ export default function ProfileScreen() {
   const [hasVideo, setHasVideo] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [mediaBusy, setMediaBusy] = useState(false);
-  const [myTraits, setMyTraits] = useState<Record<string, number>>({});
+  const [traits, setTraits] = useState<string[]>([]);
+  const [loveLanguage, setLoveLanguage] = useState<string | null>(null);
+  const [workout, setWorkout] = useState<string | null>(null);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [editSlot, setEditSlot] = useState<number | null>(null); // which slot (0-2) is being edited
   const [pickedQ, setPickedQ] = useState<string | null>(null);
@@ -73,7 +77,7 @@ export default function ProfileScreen() {
     if (!user) return;
     setUid(user.id);
     const { data } = await supabase.from("profiles")
-      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active, prompts")
+      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active, prompts, traits, love_language, workout")
       .eq("id", user.id).maybeSingle();
     if (data) {
       setName(data.display_name); setBio(data.bio ?? ""); setCity(data.city ?? "");
@@ -82,10 +86,11 @@ export default function ProfileScreen() {
       setHasVideo(!!data.video_path);
       setAudioUrl(data.audio_path ? await signMediaPath(data.audio_path) : null);
       setPrompts(Array.isArray(data.prompts) ? data.prompts : []);
+      setTraits(Array.isArray(data.traits) ? data.traits : []);
+      setLoveLanguage(data.love_language ?? null);
+      setWorkout(data.workout ?? null);
     }
     setPhotos(await listOwnPhotos(user.id));
-    const { data: tr } = await supabase.rpc("get_traits", { uid: user.id });
-    if (tr?.[0]?.traits) setMyTraits(tr[0].traits);
   }, []);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
@@ -94,7 +99,8 @@ export default function ProfileScreen() {
     if (!uid) return;
     // Update ONLY editable fields — never resend birthdate/gender.
     const { error } = await supabase.from("profiles")
-      .update({ display_name: name.trim(), bio: bio.trim() || null, city: city.trim() || null, prompts })
+      .update({ display_name: name.trim(), bio: bio.trim() || null, city: city.trim() || null,
+                prompts, traits, love_language: loveLanguage, workout })
       .eq("id", uid);
     // Refresh the semantic embedding when the bio/prompts change (fire-and-forget).
     if (!error) supabase.functions.invoke("embed-profile").catch(() => {});
@@ -226,9 +232,6 @@ export default function ProfileScreen() {
   const pct = Math.round((done / checks.length) * 100);
   const nextTip = checks.find(([ok]) => !ok)?.[1] ?? null;
   const mainPhoto = photos[0]?.url ?? null;
-
-  const topTraits = Object.entries(myTraits).filter(([k]) => TRAIT_LABEL[k])
-    .sort((a, b) => b[1] - a[1]).slice(0, 6);
 
   return (
     <ScrollView style={s.wrap} contentContainerStyle={{ paddingBottom: 44 }}>
@@ -435,20 +438,48 @@ export default function ProfileScreen() {
           placeholder="Where you're based" placeholderTextColor={theme.muted} />
       </View>
 
-      {/* Conversation style — earned from real calls */}
-      {topTraits.length > 0 && (
-        <>
-          <SectionHeader icon="sparkles" title="Your conversation style"
-            hint="Built from what people say after talking with you — never from how you sound." />
-          <View style={s.traitWrap}>
-            {topTraits.map(([k]) => (
-              <View key={k} style={s.traitChip}>
-                <Text style={s.traitChipText}>{TRAIT_LABEL[k]}</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
+      {/* Personality — self-selected, shown on your card in Discover */}
+      <SectionHeader icon="sparkles" title="My personality"
+        hint={`Pick up to ${MAX_TRAITS}. These show on your profile and help us match you.`} />
+      <View style={s.traitWrap}>
+        {TRAIT_OPTIONS.map((t) => {
+          const on = traits.includes(t);
+          return (
+            <TouchableOpacity key={t} style={[s.traitChip, on && s.traitChipOn]}
+              onPress={() => setTraits((cur) =>
+                cur.includes(t) ? cur.filter((x) => x !== t)
+                  : cur.length >= MAX_TRAITS ? cur : [...cur, t])}>
+              <Text style={[s.traitChipText, on && s.traitChipTextOn]}>{t}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <SectionHeader icon="heart-half" title="My love language" />
+      <View style={s.traitWrap}>
+        {LOVE_LANGUAGES.map((l) => {
+          const on = loveLanguage === l;
+          return (
+            <TouchableOpacity key={l} style={[s.traitChip, on && s.traitChipOn]}
+              onPress={() => setLoveLanguage(on ? null : l)}>
+              <Text style={[s.traitChipText, on && s.traitChipTextOn]}>{l}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      <SectionHeader icon="barbell" title="Do you work out?" />
+      <View style={s.traitWrap}>
+        {WORKOUTS.map((w) => {
+          const on = workout === w;
+          return (
+            <TouchableOpacity key={w} style={[s.traitChip, on && s.traitChipOn]}
+              onPress={() => setWorkout(on ? null : w)}>
+              <Text style={[s.traitChipText, on && s.traitChipTextOn]}>{w}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
 
       {verified && (
         <View style={[s.banner, { borderColor: "rgba(111,168,201,.4)", marginTop: 24 }]}>
@@ -625,7 +656,9 @@ const s = StyleSheet.create({
   traitWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8, paddingHorizontal: 22 },
   traitChip: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
     borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8 },
-  traitChipText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.semibold },
+  traitChipText: { color: theme.muted, fontSize: 12.5, fontFamily: theme.font.semibold },
+  traitChipOn: { borderColor: theme.gold, backgroundColor: theme.goldSoft },
+  traitChipTextOn: { color: theme.gold },
 
   saveBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
     borderRadius: theme.radii.pill, paddingVertical: 17, marginHorizontal: 22, ...theme.shadow.cta },

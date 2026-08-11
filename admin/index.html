@@ -1,383 +1,452 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Admin · Dashboard</title>
+<title>Dosti Connect · Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
-<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Unbounded:wght@600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{
-    --bg:#0B0D14; --card:#12151E; --card2:#1A1E2A; --ink:#E9E7E2; --muted:#8B90A3;
-    --line:#232838; --gold:#FF3D8A; --violet:#8A3FFC; --orange:#FF8A3D; --teal:#2EE6D6;
-    --danger:#F1453A; --amber:#FFB020; --radius:18px;
-  }
-  *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:"Plus Jakarta Sans",system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-  .brand{font-family:"Unbounded",sans-serif;font-weight:800;letter-spacing:-.5px;
-    background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));-webkit-background-clip:text;background-clip:text;color:transparent}
-  button{font-family:inherit;cursor:pointer;border:none}
-  input{font-family:inherit}
-  .hidden{display:none !important}
+/* Design tokens — identical to website/styles.css so the two read as one product. */
+:root{
+  --bg:#0B0D14; --bg-subtle:#0E121B; --card:#12151E; --card-raised:#1A1E2A;
+  --line:#232838; --line-light:rgba(255,255,255,.08);
+  --ink:#E9E7E2; --ink-2:#C2C5D1; --muted:#8B90A3; --muted-dark:#585D70;
+  --gold:#FF7A2E; --gold-soft:rgba(255,122,46,.12); --gold-glow:rgba(255,122,46,.35);
+  --coral:#FF5E3A; --ruby:#FF2D55; --emerald:#2EE6D6; --violet:#8A3FFC;
+  --brand-gradient:linear-gradient(135deg,#FF9F1C 0%,#FF5E3A 50%,#FF2D55 100%);
+  --font-display:'Unbounded',sans-serif; --font-body:'Plus Jakarta Sans',system-ui,sans-serif;
+  --shadow-sm:0 4px 12px rgba(0,0,0,.3); --shadow-md:0 12px 32px rgba(0,0,0,.45);
+  --shadow-glow:0 8px 30px rgba(255,94,58,.35);
+  --r-sm:10px; --r-md:18px; --r-lg:26px; --r-pill:9999px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;min-height:100vh}
+/* ambient aurora glow, same motif as the app + site */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(60rem 40rem at 12% -10%,rgba(255,122,46,.10),transparent 60%),
+             radial-gradient(50rem 36rem at 105% 8%,rgba(138,63,252,.10),transparent 60%)}
+.wrap{position:relative;z-index:1}
+a{color:var(--gold);text-decoration:none}
+h1,h2,h3{font-family:var(--font-display);letter-spacing:-.02em;font-weight:800}
 
-  /* login */
-  #login{max-width:420px;margin:14vh auto;padding:28px;background:var(--card);border:1px solid var(--line);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.4)}
-  #login h1{font-size:24px;margin:0 0 4px}
-  #login p{color:var(--muted);font-size:13.5px;margin:0 0 20px;line-height:1.5}
-  #login input{width:100%;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:13px 14px;color:var(--ink);font-size:15px;margin-bottom:12px}
-  #login input:focus{outline:none;border-color:var(--gold)}
-  .btn{width:100%;padding:14px;border-radius:999px;font-weight:800;font-size:15px;color:#fff;background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet))}
-  .btn:disabled{opacity:.5;cursor:default}
-  .btn.ghost{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
-  .msg{font-size:13px;margin-top:12px;line-height:1.5}
-  .msg.err{color:#ff8a8a}.msg.ok{color:var(--teal)}
+/* ── login ─────────────────────────────────────────────────────────── */
+.login{min-height:100vh;display:grid;place-items:center;padding:24px}
+.login-card{width:100%;max-width:420px;background:var(--card);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:38px 32px;box-shadow:var(--shadow-md)}
+.brand{font-family:var(--font-display);font-size:26px;font-weight:800;
+  background:var(--brand-gradient);-webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;letter-spacing:-.03em}
+.login p{color:var(--muted);font-size:14px;margin:10px 0 26px;line-height:1.6}
+input{width:100%;background:var(--card-raised);border:1px solid var(--line);color:var(--ink);
+  border-radius:var(--r-sm);padding:14px 16px;font:inherit;font-size:15px;outline:none;
+  transition:border-color .2s}
+input:focus{border-color:var(--gold)}
+.btn{width:100%;border:0;border-radius:var(--r-pill);padding:15px;font:inherit;font-weight:800;
+  font-size:14.5px;cursor:pointer;background:var(--brand-gradient);color:#fff;margin-top:12px;
+  box-shadow:var(--shadow-glow);transition:transform .15s,filter .2s}
+.btn:hover{filter:brightness(1.08)} .btn:active{transform:scale(.98)}
+.btn.ghost{background:var(--card-raised);color:var(--ink);border:1px solid var(--line);box-shadow:none}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--muted-dark);font-size:12px}
+.divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--line)}
+.msg{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.5}
+.msg.err{color:var(--ruby)}
 
-  /* shell */
-  #app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
-  aside{background:#0e1119;border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
-  aside .logo{font-family:"Unbounded";font-weight:800;font-size:17px;padding:6px 8px 18px}
-  nav a{display:flex;align-items:center;gap:9px;padding:10px 12px;border-radius:12px;color:var(--muted);font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:2px}
-  nav a:hover{background:var(--card2);color:var(--ink)}
-  nav a.on{background:var(--card);color:var(--ink);border:1px solid var(--line)}
-  nav a .dot{width:7px;height:7px;border-radius:50%;background:var(--gold);margin-left:auto}
-  .status{margin-top:22px;border-top:1px solid var(--line);padding-top:16px}
-  .status h4{color:var(--muted);font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;margin:0 0 10px;padding:0 8px}
-  .srow{display:flex;align-items:center;justify-content:space-between;padding:5px 8px;font-size:12px}
-  .srow .st{font-size:10.5px;font-weight:700}
-  .st.ok{color:var(--teal)}.st.dev{color:var(--amber)}.st.road{color:var(--muted)}
+/* ── shell ─────────────────────────────────────────────────────────── */
+.top{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:16px;
+  padding:16px 28px;background:rgba(11,13,20,.82);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line)}
+.top .brand{font-size:19px}
+.spacer{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--r-pill);padding:7px 14px;
+  font-size:12.5px;color:var(--muted);font-weight:600}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--emerald)}
+.link-btn{background:none;border:0;color:var(--muted);font:inherit;font-size:13px;
+  cursor:pointer;font-weight:600}
+.link-btn:hover{color:var(--gold)}
 
-  main{padding:24px 28px;max-width:1100px}
-  header{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:8px}
-  header h1{font-size:24px;margin:0;font-family:"Unbounded";letter-spacing:-.5px}
-  header .sub{color:var(--muted);font-size:12.5px;margin-top:3px}
-  .row{display:flex;gap:8px;align-items:center}
-  .chip{background:var(--card2);border:1px solid var(--line);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;color:var(--ink)}
+main{max-width:1240px;margin:0 auto;padding:28px}
+.sec{margin-bottom:34px}
+.sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+.sec h2{font-size:19px}
+.sec-note{color:var(--muted);font-size:12.5px}
 
-  section.page{display:none;margin-top:18px}
-  section.page.on{display:block}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px}
-  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden}
-  .kpi::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--orange),var(--gold),var(--violet));opacity:.7}
-  .kpi .label{color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.4px}
-  .kpi .val{font-size:28px;font-weight:800;margin-top:6px;font-variant-numeric:tabular-nums}
-  .kpi .sub{color:var(--muted);font-size:11px;margin-top:3px}
-  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-top:14px}
-  .panel h3{margin:0 0 14px;font-size:15px}
-  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-  @media(max-width:820px){.two{grid-template-columns:1fr}#app{grid-template-columns:1fr}aside{position:static;height:auto}}
-  table{width:100%;border-collapse:collapse;font-size:13px}
-  th,td{text-align:left;padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
-  th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.4px;font-weight:700}
-  .pill{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:700}
-  .pill.open{background:rgba(241,69,58,.16);color:#ff8a8a}.pill.done{background:rgba(46,230,214,.14);color:var(--teal)}
-  .mini{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;background:var(--card2);border:1px solid var(--line);color:var(--ink)}
-  .empty{color:var(--muted);text-align:center;padding:24px;font-size:13.5px}
-  .note{background:rgba(255,176,32,.09);border:1px solid rgba(255,176,32,.3);border-radius:12px;padding:12px 14px;font-size:12.5px;color:#f4d29a;line-height:1.5;margin-top:12px}
-  canvas{max-height:280px}
+/* ── stat grid ─────────────────────────────────────────────────────── */
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.g2{grid-template-columns:repeat(auto-fit,minmax(330px,1fr))}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r-md);
+  padding:20px;box-shadow:var(--shadow-sm)}
+.stat .label{color:var(--muted);font-size:11.5px;font-weight:700;letter-spacing:.09em;
+  text-transform:uppercase}
+.stat .value{font-family:var(--font-display);font-size:32px;font-weight:800;margin-top:8px;
+  letter-spacing:-.03em}
+.stat .sub{color:var(--muted);font-size:12.5px;margin-top:5px}
+.stat.accent .value{background:var(--brand-gradient);-webkit-background-clip:text;
+  background-clip:text;-webkit-text-fill-color:transparent}
+
+/* ── bars / lists ──────────────────────────────────────────────────── */
+.bar-row{display:grid;grid-template-columns:132px 1fr 52px;align-items:center;gap:12px;
+  margin-bottom:10px;font-size:13px}
+.bar-row .k{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:9px;background:var(--card-raised);border-radius:var(--r-pill);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--brand-gradient);border-radius:var(--r-pill)}
+.bar-row .v{text-align:right;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+
+/* sparkline-ish daily chart */
+.chart{display:flex;align-items:flex-end;gap:3px;height:130px;margin-top:6px}
+.chart .col{flex:1;min-width:0;background:var(--brand-gradient);border-radius:4px 4px 0 0;
+  opacity:.85;min-height:2px;transition:opacity .15s}
+.chart .col:hover{opacity:1}
+.legend{display:flex;gap:16px;margin-top:12px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--ink)}
+
+/* ── table ─────────────────────────────────────────────────────────── */
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;
+  letter-spacing:.09em;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700}
+td{padding:13px 12px;border-bottom:1px solid var(--line);color:var(--ink-2);vertical-align:top}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;background:var(--gold-soft);color:var(--gold);border-radius:var(--r-pill);
+  padding:3px 10px;font-size:11px;font-weight:700}
+.tag.warn{background:rgba(255,45,85,.12);color:var(--ruby)}
+.tag.ok{background:rgba(46,230,214,.12);color:var(--emerald)}
+.mini{background:var(--card-raised);border:1px solid var(--line);color:var(--ink);
+  border-radius:var(--r-pill);padding:6px 14px;font:inherit;font-size:12px;font-weight:700;
+  cursor:pointer}
+.mini:hover{border-color:var(--gold);color:var(--gold)}
+
+.empty{color:var(--muted-dark);font-size:13.5px;padding:22px 0;text-align:center}
+.hidden{display:none!important}
+.err-card{border-color:rgba(255,45,85,.35);background:rgba(255,45,85,.05)}
+.err-card .label{color:var(--ruby)}
+.skel{color:var(--muted-dark);font-size:13px}
 </style>
 </head>
 <body>
+<div class="wrap">
 
-<!-- LOGIN -->
-<div id="login">
-  <h1><span class="brand">Admin Console</span></h1>
-  <p>Sign in with the same account you use for the app.</p>
-  <button class="btn" id="googleBtn" style="margin-bottom:14px">Continue with Google</button>
-  <div style="text-align:center;color:var(--muted);font-size:12px;margin:2px 0 14px">or use an email code</div>
-  <div id="step-email">
-    <input id="email" type="email" placeholder="you@email.com" autocomplete="email" />
-    <button class="btn" id="sendBtn">Send code</button>
+<!-- ════ LOGIN ════ -->
+<div id="login" class="login">
+  <div class="login-card">
+    <div class="brand">Dosti&nbsp;Connect</div>
+    <p>Admin console. Sign in with an account that's on the admin allow-list.</p>
+    <button class="btn" id="google">Continue with Google</button>
+    <div class="divider">or email link</div>
+    <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+    <button class="btn ghost" id="send">Email me a login link</button>
+    <div class="msg" id="loginMsg"></div>
   </div>
-  <div id="step-code" class="hidden">
-    <input id="code" inputmode="numeric" placeholder="6-digit code" autocomplete="one-time-code" />
-    <button class="btn" id="verifyBtn">Verify &amp; enter</button>
-    <button class="btn ghost" id="backBtn" style="margin-top:8px">Use a different email</button>
-  </div>
-  <div id="loginMsg" class="msg"></div>
 </div>
 
-<!-- APP -->
+<!-- ════ APP ════ -->
 <div id="app" class="hidden">
-  <aside>
-    <div class="logo"><span class="brand">Admin</span></div>
-    <nav id="nav"></nav>
-    <div class="status">
-      <h4>System status</h4>
-      <div id="sysStatus"></div>
-    </div>
-  </aside>
+  <div class="top">
+    <div class="brand">Dosti&nbsp;Connect</div>
+    <span class="pill"><span class="dot"></span>Admin</span>
+    <div class="spacer"></div>
+    <span class="pill" id="who"></span>
+    <button class="link-btn" id="refresh">Refresh</button>
+    <button class="link-btn" id="out">Sign out</button>
+  </div>
+
   <main>
-    <header>
-      <div>
-        <h1 id="pageTitle">Overview</h1>
-        <div class="sub" id="asOf">—</div>
+    <div id="notAdmin" class="card err-card hidden" style="margin-bottom:26px">
+      <div class="label" style="font-weight:800;font-size:14px">Not an admin</div>
+      <p style="color:var(--muted);font-size:13.5px;margin-top:8px;line-height:1.6">
+        You're signed in, but this account isn't on the allow-list, so every panel below
+        will stay empty. Add yourself by running this in the Supabase SQL editor:<br>
+        <code style="color:var(--gold);font-size:12.5px">insert into admins (user_id) values ('<span id="myId"></span>');</code>
+      </p>
+    </div>
+
+    <!-- OVERVIEW -->
+    <section class="sec">
+      <div class="sec-head"><h2>Overview</h2><span class="sec-note">live from the database</span></div>
+      <div class="grid g4" id="overview"><div class="skel">Loading…</div></div>
+    </section>
+
+    <!-- ACTIVITY -->
+    <section class="sec">
+      <div class="sec-head"><h2>Last 30 days</h2><span class="sec-note">signups · matches · messages</span></div>
+      <div class="card" id="tsCard"><div class="skel">Loading…</div></div>
+    </section>
+
+    <!-- FUNNEL + ENGAGEMENT -->
+    <div class="grid g2 sec">
+      <div class="card">
+        <div class="sec-head"><h2 style="font-size:16px">Onboarding funnel</h2></div>
+        <div id="funnel"><div class="skel">Loading…</div></div>
       </div>
-      <div class="row">
-        <button class="chip" id="refreshBtn">↻ Refresh</button>
-        <button class="chip" id="signoutBtn">Sign out</button>
+      <div class="card">
+        <div class="sec-head"><h2 style="font-size:16px">Engagement health</h2></div>
+        <div id="engagement"><div class="skel">Loading…</div></div>
       </div>
-    </header>
-    <div id="dashMsg" class="msg"></div>
+    </div>
 
-    <!-- sections injected/toggled here -->
-    <section class="page on" data-page="overview">
-      <div class="grid" id="ov-users"></div>
-      <div class="panel"><h3>Growth · last 14 days</h3><canvas id="c-growth" height="90"></canvas></div>
+    <!-- DEMOGRAPHICS -->
+    <section class="sec">
+      <div class="sec-head"><h2>Who's on the app</h2></div>
+      <div class="grid g2" id="demo"><div class="skel">Loading…</div></div>
     </section>
 
-    <section class="page" data-page="moderation">
-      <div class="grid" id="mod-kpis"></div>
-      <div class="two">
-        <div class="panel"><h3>Top report reasons</h3><canvas id="c-reasons" height="120"></canvas></div>
-        <div class="panel"><h3>Most-reported users</h3><table><thead><tr><th>User</th><th>Verified</th><th>Reports</th></tr></thead><tbody id="highrisk"></tbody></table><div id="highriskEmpty" class="empty hidden">No reported users.</div></div>
-      </div>
-      <div class="panel"><h3>Reports queue</h3>
-        <table><thead><tr><th>Reporter</th><th>Reported</th><th>Reason</th><th>When</th><th>Status</th><th></th></tr></thead><tbody id="reportsBody"></tbody></table>
-        <div id="reportsEmpty" class="empty hidden">No reports. 🎉</div>
-      </div>
-      <div class="note">🛈 <b>AI content moderation (NLP / image / audio scanning)</b> from the reference design is <b>roadmap — not built.</b> This panel shows your real, user-filed reports &amp; blocks.</div>
+    <!-- MODERATION -->
+    <section class="sec">
+      <div class="sec-head"><h2>Reports</h2><span class="sec-note">unresolved first</span></div>
+      <div class="card" id="reports"><div class="skel">Loading…</div></div>
     </section>
 
-    <section class="page" data-page="match">
-      <div class="grid" id="match-kpis"></div>
-      <div class="note">🛈 Quality here is measured from <b>real post-call feedback</b> (stars, "talk again", completion) — not a fabricated compatibility score.</div>
+    <!-- CHURN -->
+    <section class="sec">
+      <div class="sec-head"><h2>Churn</h2><span class="sec-note">why people leave</span></div>
+      <div class="grid g4" id="churn"><div class="skel">Loading…</div></div>
     </section>
-
-    <section class="page" data-page="verify">
-      <div class="grid" id="verify-kpis"></div>
-      <div class="note">🛈 Your real trust layer is <b>selfie verification + reports + blocks</b>. <b>ML fake-profile / catfish detection</b> from the reference design is <b>roadmap — not built.</b></div>
-    </section>
-
-    <section class="page" data-page="audience">
-      <div class="two">
-        <div class="panel"><h3>Gender</h3><canvas id="c-gender" height="150"></canvas></div>
-        <div class="panel"><h3>Age</h3><canvas id="c-age" height="150"></canvas></div>
-      </div>
-      <div class="two">
-        <div class="panel"><h3>Languages</h3><canvas id="c-lang" height="150"></canvas></div>
-        <div class="panel"><h3>Cities</h3><canvas id="c-city" height="150"></canvas></div>
-      </div>
-      <div class="note">🛈 This is our honest version of "Localization" — real language &amp; city breakdowns from profiles. The reference design's "24 regions / 892 moderators / 18-language AI" is fiction.</div>
-    </section>
-
-    <section class="page" data-page="behavior">
-      <div class="panel"><h3>Calls by hour of day (all-time)</h3><canvas id="c-hour" height="90"></canvas></div>
-      <div class="panel"><h3>Signups · Calls · Matches (14 days)</h3><canvas id="c-growth2" height="90"></canvas></div>
-    </section>
-
-    <section class="page" data-page="revenue">
-      <div class="grid" id="rev-kpis"></div>
-      <div class="note">🛈 Payments aren't live yet (dev stubs), so these reflect test data. <b>Billing-fraud ML / chargeback detection</b> from the reference design is <b>roadmap — not built.</b></div>
-    </section>
-
-    <section class="page" data-page="churn">
-      <div class="grid" id="churn-kpis"></div>
-      <div class="panel"><h3>Where they met their person</h3><canvas id="c-where" height="150"></canvas></div>
-      <div class="note">🛈 Captured by the app's "Before you go" flow — why people leave, and (when they've met someone) which app they met on. Needs <code>offboarding-v21.sql</code> run.</div>
-    </section>
-
-    <p style="color:var(--muted);font-size:12px;margin:26px 0 40px">Live, admin-only data from your Supabase. Real numbers — small pre-launch, and honest about it.</p>
   </main>
 </div>
+</div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script>
-// ── CONFIG ──────────────────────────────────────────────────
 const SUPABASE_URL = "https://yqkvgbbordwurtgnyyxi.supabase.co";
-const ANON_KEY = "sb_publishable_Q0IV7TjVt1ETSXR1eZE83A_DTWGaFby"; // public/anon key — safe to embed (RLS protects everything)
-// ────────────────────────────────────────────────────────────
+// Public/anon key — safe to embed. Every admin_* RPC is gated on is_admin()
+// server-side, so this key alone grants nothing.
+const ANON_KEY = "sb_publishable_Q0IV7TjVt1ETSXR1eZE83A_DTWGaFby";
 const db = window.supabase.createClient(SUPABASE_URL, ANON_KEY);
-const $ = (id)=>document.getElementById(id);
-const fmt = (n)=> n==null? "—" : Number(n).toLocaleString();
-const charts = {};
-const D = {}; // fetched data cache
+const $ = (id) => document.getElementById(id);
+const num = (n) => (n === null || n === undefined) ? "—" : Number(n).toLocaleString();
+const pct = (n) => (n === null || n === undefined) ? "—" : n + "%";
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
 
-const NAV = [
-  ["overview","Overview"], ["moderation","Moderation"], ["match","Match Quality"],
-  ["verify","Verification & Risk"], ["audience","Audience"], ["behavior","User Behavior"],
-  ["revenue","Revenue"], ["churn","Churn"],
-];
-const SYS = [
-  ["Selfie verification","ok","Active"], ["Reports & blocks","ok","Active"],
-  ["Semantic matching","ok","Active"], ["Today's picks","ok","Active"],
-  ["Voice calls","dev","Simulated"], ["Payments (RevenueCat/UPI)","road","Roadmap"],
-  ["AI content moderation","road","Roadmap"], ["Fake-profile ML","road","Roadmap"],
-  ["Billing-fraud ML","road","Roadmap"],
-];
+// Each panel loads independently: one failing RPC must never blank the page.
+async function rpc(name, args) {
+  try {
+    const { data, error } = await db.rpc(name, args || {});
+    if (error) return { err: error.message };
+    return { data };
+  } catch (e) { return { err: String(e) }; }
+}
+function panelError(el, name, msg) {
+  el.innerHTML = `<div class="card err-card"><div class="label" style="font-weight:800">
+    ${esc(name)} unavailable</div>
+    <p style="color:var(--muted);font-size:12.5px;margin-top:7px">${esc(msg)}</p></div>`;
+}
 
-// ── auth ────────────────────────────────────────────────────
-function setMsg(id,t,k){const e=$(id);e.textContent=t||"";e.className="msg "+(k||"");}
-$("sendBtn").onclick = async ()=>{
-  const email=$("email").value.trim(); if(!email)return;
-  $("sendBtn").disabled=true; setMsg("loginMsg","Sending…");
-  const {error}=await db.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
-  $("sendBtn").disabled=false;
-  if(error)return setMsg("loginMsg",error.message,"err");
-  $("step-email").classList.add("hidden");$("step-code").classList.remove("hidden");
-  setMsg("loginMsg","Code sent — check your email.","ok");
+// ── auth ──────────────────────────────────────────────────────────────
+$("send").onclick = async () => {
+  const email = $("email").value.trim();
+  if (!email) return;
+  $("loginMsg").className = "msg";
+  $("loginMsg").textContent = "Sending…";
+  const { error } = await db.auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+  $("loginMsg").className = error ? "msg err" : "msg";
+  $("loginMsg").textContent = error
+    ? error.message
+    : "Check your email for the login link. (Supabase's built-in mailer is rate-limited — Google sign-in is more reliable.)";
 };
-$("verifyBtn").onclick = async ()=>{
-  const email=$("email").value.trim(), token=$("code").value.trim(); if(!token)return;
-  $("verifyBtn").disabled=true; setMsg("loginMsg","Verifying…");
-  const {error}=await db.auth.verifyOtp({email,token,type:"email"});
-  $("verifyBtn").disabled=false;
-  if(error)return setMsg("loginMsg",error.message,"err");
-  boot();
+$("google").onclick = async () => {
+  const { error } = await db.auth.signInWithOAuth({
+    provider: "google", options: { redirectTo: window.location.origin + window.location.pathname },
+  });
+  if (error) { $("loginMsg").className = "msg err"; $("loginMsg").textContent = error.message; }
 };
-$("backBtn").onclick=()=>{$("step-code").classList.add("hidden");$("step-email").classList.remove("hidden");setMsg("loginMsg","");};
-$("googleBtn").onclick=async()=>{
-  setMsg("loginMsg","Opening Google…");
-  const {error}=await db.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin}});
-  if(error)setMsg("loginMsg",error.message,"err");
-};
-// After the Google redirect returns, the session lands here → open the dashboard.
-db.auth.onAuthStateChange((_e,session)=>{ if(session && $("app").classList.contains("hidden")) boot(); });
-$("refreshBtn").onclick=loadAll;
-$("signoutBtn").onclick=async()=>{await db.auth.signOut();location.reload();};
+$("out").onclick = async () => { await db.auth.signOut(); location.reload(); };
+$("refresh").onclick = () => boot();
 
-// ── nav + status ────────────────────────────────────────────
-function buildNav(){
-  $("nav").innerHTML = NAV.map(([k,label],i)=>`<a data-nav="${k}" class="${i===0?'on':''}">${label}<span class="dot"></span></a>`).join("");
-  document.querySelectorAll("#nav a").forEach(a=>a.onclick=()=>go(a.dataset.nav));
-  $("sysStatus").innerHTML = SYS.map(([n,c,t])=>`<div class="srow"><span>${n}</span><span class="st ${c}">${t}</span></div>`).join("");
-}
-function go(page){
-  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.nav===page));
-  document.querySelectorAll("section.page").forEach(s=>s.classList.toggle("on",s.dataset.page===page));
-  $("pageTitle").textContent = (NAV.find(n=>n[0]===page)||[])[1] || "";
-}
+db.auth.onAuthStateChange((_e, session) => {
+  if (session && $("app").classList.contains("hidden")) boot();
+});
 
-// ── boot + load ─────────────────────────────────────────────
-async function boot(){
-  const {data}=await db.auth.getSession(); if(!data.session)return;
-  $("login").classList.add("hidden"); $("app").classList.remove("hidden");
-  buildNav(); loadAll();
-}
-async function rpc(fn,args){const {data,error}=await db.rpc(fn,args||{}); if(error)throw error; return data;}
-async function tryRpc(fn,args){
-  try{ return await rpc(fn,args); }
-  catch(e){ console.warn("[admin]",fn,"→",e.message); return null; }
-}
-async function loadAll(){
-  setMsg("dashMsg","Loading…");
-  // Each panel loads independently — one failing query never blanks the rest.
-  D.ov = await tryRpc("admin_overview");
-  if(!D.ov){
-    setMsg("dashMsg","Couldn't load stats. Confirm you're an admin (select * from admins;) — if empty, run the insert. Otherwise check the browser console (F12) for the failing query.","err");
-    return;
+// ── boot ──────────────────────────────────────────────────────────────
+async function boot() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) { $("login").classList.remove("hidden"); $("app").classList.add("hidden"); return; }
+  $("login").classList.add("hidden");
+  $("app").classList.remove("hidden");
+  $("who").textContent = session.user.email || "signed in";
+
+  const admin = await rpc("am_i_admin");
+  if (admin.data === false) {
+    $("notAdmin").classList.remove("hidden");
+    $("myId").textContent = session.user.id;
+  } else {
+    $("notAdmin").classList.add("hidden");
   }
-  D.ts       = await tryRpc("admin_timeseries",{days:14}) || [];
-  D.rep      = await tryRpc("admin_recent_reports",{lim:30}) || [];
-  D.reasons  = await tryRpc("admin_reports_by_reason") || [];
-  D.highrisk = await tryRpc("admin_most_reported",{lim:10}) || [];
-  D.mq       = await tryRpc("admin_match_quality") || {};
-  D.vf       = await tryRpc("admin_verification") || {};
-  D.demo     = await tryRpc("admin_demographics") || {};
-  D.lang     = await tryRpc("admin_by_language",{lim:12}) || [];
-  D.city     = await tryRpc("admin_by_city",{lim:12}) || [];
-  D.hour     = await tryRpc("admin_calls_by_hour") || [];
-  D.rev      = await tryRpc("admin_revenue") || {};
-  D.churn    = await tryRpc("admin_offboarding");
-  setMsg("dashMsg","");
-  $("asOf").textContent = "As of "+new Date(D.ov.generated_at).toLocaleString();
-  renderAll();
+
+  loadOverview(); loadTimeseries(); loadFunnel();
+  loadEngagement(); loadDemographics(); loadReports(); loadChurn();
 }
 
-// ── render helpers ──────────────────────────────────────────
-function card(l,v,s){return `<div class="kpi"><div class="label">${l}</div><div class="val">${v}</div>${s?`<div class="sub">${s}</div>`:""}</div>`;}
-const PAL=["#FF8A3D","#FF3D8A","#8A3FFC","#2EE6D6","#7C93FF","#FFB020","#F1453A","#22C55E"];
-function chart(id,cfg){ if(charts[id])charts[id].destroy(); charts[id]=new Chart($(id).getContext("2d"),cfg); }
-const axis={grid:{color:"#232838"},ticks:{color:"#8B90A3"}};
-const noLegend={plugins:{legend:{display:false}}};
-function bar(id,labels,data,horizontal){
-  chart(id,{type:"bar",data:{labels,datasets:[{data,backgroundColor:PAL.map((c,i)=>PAL[i%PAL.length]),borderRadius:6}]},
-    options:{indexAxis:horizontal?"y":"x",responsive:true,maintainAspectRatio:false,...noLegend,scales:{x:axis,y:axis}}});
+// ── panels ────────────────────────────────────────────────────────────
+async function loadOverview() {
+  const el = $("overview");
+  const { data: d, err } = await rpc("admin_overview");
+  if (err) return panelError(el, "Overview", err);
+  const cards = [
+    ["Total users", num(d.users_total), `${num(d.new_7d)} joined this week`, true],
+    ["Active now", num(d.active_24h), "seen in the last 24h"],
+    ["Verified", num(d.users_verified), `${num(d.users_paused)} paused`],
+    ["Matches", num(d.matches_total), `${num(d.matches_24h)} in 24h`, true],
+    ["Likes (24h)", num(d.likes_24h), `${num(d.swipes_total)} swipes all-time`],
+    ["Messages", num(d.messages_total), `${num(d.messages_24h)} in 24h`],
+    ["Requests", num(d.requests_total), `${num(d.requests_pending)} awaiting reply`],
+    ["Open reports", num(d.reports_open), d.reports_open > 0 ? "needs review" : "all clear"],
+    ["Subscribers", num(d.subs_active), "active plans"],
+    ["Match rate", pct(d.match_rate), "of likes become mutual", true],
+  ];
+  el.innerHTML = cards.map(([label, value, sub, accent]) => `
+    <div class="card stat ${accent ? "accent" : ""}">
+      <div class="label">${esc(label)}</div>
+      <div class="value">${esc(value)}</div>
+      <div class="sub">${esc(sub)}</div>
+    </div>`).join("");
 }
-function doughnut(id,labels,data){
-  chart(id,{type:"doughnut",data:{labels,datasets:[{data,backgroundColor:PAL}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8B90A3",boxWidth:12}}}}});
+
+async function loadTimeseries() {
+  const el = $("tsCard");
+  const { data, err } = await rpc("admin_timeseries", { days: 30 });
+  if (err) return panelError(el, "Activity", err);
+  if (!data || !data.length) { el.innerHTML = `<div class="empty">No activity yet.</div>`; return; }
+  const max = Math.max(1, ...data.map((r) => Math.max(r.signups, r.matches, r.messages)));
+  const tot = data.reduce((a, r) => ({
+    s: a.s + r.signups, m: a.m + r.matches, g: a.g + r.messages,
+  }), { s: 0, m: 0, g: 0 });
+  el.innerHTML = `
+    <div class="chart">${data.map((r) => {
+      const h = Math.round((Math.max(r.signups, r.matches, r.messages) / max) * 100);
+      return `<div class="col" style="height:${h}%" title="${r.day}: ${r.signups} signups · ${r.matches} matches · ${r.messages} messages"></div>`;
+    }).join("")}</div>
+    <div class="legend">
+      <span><b>${num(tot.s)}</b> signups</span>
+      <span><b>${num(tot.m)}</b> matches</span>
+      <span><b>${num(tot.g)}</b> messages</span>
+      <span style="margin-left:auto">bar height = busiest metric that day</span>
+    </div>`;
 }
 
-function renderAll(){
-  const d=D.ov;
-  // Overview
-  $("ov-users").innerHTML =
-    card("Total users",fmt(d.users_total)) + card("New today",fmt(d.users_new_today)) +
-    card("New (7d)",fmt(d.users_new_7d)) + card("Verified",fmt(d.users_verified), d.users_total?Math.round(100*d.users_verified/d.users_total)+"%":"") +
-    card("Embedded",fmt(d.users_embedded)) + card("Calls (7d)",fmt(d.calls_7d)) +
-    card("Active callers (7d)",fmt(d.active_callers_7d)) + card("Matches",fmt(d.matches_total)) +
-    card("Messages",fmt(d.messages_total)) + card("Open reports",fmt(d.reports_open));
-  growth("c-growth"); growth("c-growth2");
-
-  // Moderation
-  $("mod-kpis").innerHTML =
-    card("Open reports",fmt(d.reports_open)) + card("Total reports",fmt(d.reports_total)) +
-    card("Reported users",fmt(D.vf.reported_users)) + card("Blocks",fmt(D.vf.blocks));
-  bar("c-reasons", D.reasons.map(r=>r.reason), D.reasons.map(r=>r.total), true);
-  const hr=$("highrisk"); hr.innerHTML=""; $("highriskEmpty").classList.toggle("hidden",D.highrisk.length>0);
-  D.highrisk.forEach(u=>hr.insertAdjacentHTML("beforeend",`<tr><td>${u.name??"—"}</td><td>${u.verified?"✓":"—"}</td><td>${u.reports}</td></tr>`));
-  renderReports();
-
-  // Match quality
-  const m=D.mq;
-  $("match-kpis").innerHTML =
-    card("Matches",fmt(m.matches_total)) + card("Matches (7d)",fmt(m.matches_7d)) +
-    card("Match rate",(m.match_rate_pct??0)+"%","of ended calls") +
-    card("Avg rating",m.avg_stars!=null?m.avg_stars+"★":"—", fmt(m.feedback_count)+" ratings") +
-    card("Talk-again yes",(m.talk_again_yes_pct??0)+"%") + card("Completion",(m.completion_pct??0)+"%","calls finished");
-
-  // Verification
-  const v=D.vf;
-  $("verify-kpis").innerHTML =
-    card("Verified",fmt(v.verified), v.total?Math.round(100*v.verified/v.total)+"%":"") +
-    card("Unverified",fmt(v.unverified)) + card("Active (in deck)",fmt(v.active)) +
-    card("Inactive",fmt(v.inactive)) + card("Reported users",fmt(v.reported_users)) + card("Blocks",fmt(v.blocks));
-
-  // Audience
-  const g=D.demo.gender||{};
-  doughnut("c-gender", Object.keys(g), Object.values(g));
-  const a=D.demo.age||{};
-  bar("c-age", ["18–24","25–34","35–44","45+"], [a["18_24"],a["25_34"],a["35_44"],a["45_plus"]]);
-  bar("c-lang", D.lang.map(x=>x.language), D.lang.map(x=>x.users), true);
-  bar("c-city", D.city.map(x=>x.city), D.city.map(x=>x.users), true);
-
-  // Behavior
-  bar("c-hour", D.hour.map(h=>h.hour+":00"), D.hour.map(h=>h.calls));
-
-  // Revenue
-  const r=D.rev, tiers=r.subs_by_tier||{};
-  const tierStr=Object.keys(tiers).length?Object.entries(tiers).map(([k,v])=>`${k}: ${v}`).join(" · "):"none";
-  $("rev-kpis").innerHTML =
-    card("Active subs",fmt(r.subs_active),tierStr) + card("Coins in circulation",fmt(r.coins_total)) +
-    card("Gifts sent",fmt(r.gifts_sent)) + card("Coins spent on gifts",fmt(r.gifts_coins_spent));
-
-  // Churn
-  const ch=D.churn;
-  if(!ch){ $("churn-kpis").innerHTML = card("Churn logging","—","run offboarding-v21.sql to enable"); }
-  else {
-    $("churn-kpis").innerHTML =
-      card("Accounts deleted",fmt(ch.deleted_total)) + card("Met someone 💜",fmt(ch.met_someone)) +
-      card("Paused instead",fmt(ch.paused));
-    const w=ch.where_met||{}; bar("c-where", Object.keys(w), Object.values(w), true);
-  }
+function barList(obj, total) {
+  const entries = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) return `<div class="empty">No data yet.</div>`;
+  const max = total || Math.max(...entries.map((e) => e[1]));
+  return entries.map(([k, v]) => `
+    <div class="bar-row">
+      <span class="k">${esc(k)}</span>
+      <span class="bar"><i style="width:${Math.round((v / max) * 100)}%"></i></span>
+      <span class="v">${num(v)}</span>
+    </div>`).join("");
 }
-function growth(id){
-  const rows=D.ts||[]; const line=(l,k,c)=>({label:l,data:rows.map(r=>r[k]),borderColor:c,backgroundColor:c+"22",tension:.35,borderWidth:2,pointRadius:2,fill:true});
-  chart(id,{type:"line",data:{labels:rows.map(r=>r.day.slice(5)),datasets:[line("Signups","signups","#FF8A3D"),line("Calls","calls","#FF3D8A"),line("Matches","matches","#8A3FFC")]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:"#8B90A3",boxWidth:12}}},scales:{x:axis,y:{...axis,beginAtZero:true}}}});
+
+async function loadFunnel() {
+  const el = $("funnel");
+  const { data: d, err } = await rpc("admin_funnel");
+  if (err) return panelError(el, "Funnel", err);
+  const steps = [
+    ["Signed up", d.signed_up], ["Added a photo", d.has_photo],
+    ["Wrote a bio", d.has_bio], ["Answered prompts", d.has_prompts],
+    ["Picked traits", d.has_traits], ["Picked interests", d.has_interests],
+    ["Verified", d.verified], ["Live in deck", d.active],
+    ["Swiped once", d.swiped_once], ["Matched once", d.matched_once],
+    ["Messaged once", d.messaged_once],
+  ];
+  const top = Math.max(1, d.signed_up);
+  el.innerHTML = steps.map(([k, v]) => `
+    <div class="bar-row">
+      <span class="k">${esc(k)}</span>
+      <span class="bar"><i style="width:${Math.round(((v || 0) / top) * 100)}%"></i></span>
+      <span class="v">${num(v)}</span>
+    </div>`).join("");
 }
-function renderReports(){
-  const body=$("reportsBody"); body.innerHTML=""; $("reportsEmpty").classList.toggle("hidden",D.rep.length>0);
-  D.rep.forEach(r=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>${r.reporter_name??"—"}</td><td>${r.reported_name??"—"}</td><td>${r.reason??""}${r.detail?`<div style="color:var(--muted);font-size:11px">${r.detail}</div>`:""}</td>`+
-      `<td>${new Date(r.created_at).toLocaleDateString()}</td><td>${r.resolved?'<span class="pill done">resolved</span>':'<span class="pill open">open</span>'}</td><td></td>`;
-    if(!r.resolved){const b=document.createElement("button");b.className="mini";b.textContent="Resolve";
-      b.onclick=async()=>{b.disabled=true;await db.rpc("admin_resolve_report",{rid:r.id});loadAll();};tr.lastElementChild.appendChild(b);}
-    body.appendChild(tr);
+
+async function loadEngagement() {
+  const el = $("engagement");
+  const { data: d, err } = await rpc("admin_engagement");
+  if (err) return panelError(el, "Engagement", err);
+  const rows = [
+    ["Matches that started a chat", pct(d.matches_with_chat_pct)],
+    ["Requests accepted", pct(d.request_accept_pct)],
+    ["Avg photos per profile", num(d.avg_photos)],
+    ["Avg messages per match", num(d.avg_messages_per_match)],
+    ["Likes going to the top 10%", pct(d.top10pct_like_share)],
+  ];
+  el.innerHTML = rows.map(([k, v]) => `
+    <div style="display:flex;justify-content:space-between;gap:14px;padding:11px 0;
+      border-bottom:1px solid var(--line)">
+      <span style="color:var(--ink-2);font-size:13.5px">${esc(k)}</span>
+      <b style="font-variant-numeric:tabular-nums">${esc(v)}</b>
+    </div>`).join("") +
+    `<p style="color:var(--muted-dark);font-size:11.5px;margin-top:14px;line-height:1.6">
+      If the top 10% take most of the likes, the deck is too winner-take-all —
+      that's the number to watch for long-term retention.</p>`;
+}
+
+async function loadDemographics() {
+  const el = $("demo");
+  const { data: d, err } = await rpc("admin_demographics");
+  if (err) return panelError(el, "Demographics", err);
+  const panels = [
+    ["Gender", d.by_gender], ["Age", d.by_age_band], ["Top cities", d.by_city],
+    ["Looking for", d.by_goal], ["Love language", d.by_love_language],
+  ];
+  el.innerHTML = panels.map(([title, obj]) => `
+    <div class="card">
+      <div class="sec-head"><h2 style="font-size:16px">${esc(title)}</h2></div>
+      ${barList(obj)}
+    </div>`).join("");
+}
+
+async function loadReports() {
+  const el = $("reports");
+  const { data, err } = await rpc("admin_recent_reports", { lim: 40 });
+  if (err) return panelError(el, "Reports", err);
+  if (!data || !data.length) { el.innerHTML = `<div class="empty">No reports. 🎉</div>`; return; }
+  el.innerHTML = `<table><thead><tr>
+      <th>Reported</th><th>Reason</th><th>By</th><th>When</th><th>Status</th><th></th>
+    </tr></thead><tbody>${data.map((r) => `
+      <tr>
+        <td><b>${esc(r.reported_name || "—")}</b>${
+          r.reported_count > 1
+            ? ` <span class="tag warn">${r.reported_count}× reported</span>` : ""}</td>
+        <td>${esc(r.reason)}${r.detail ? `<br><span style="color:var(--muted-dark);font-size:12px">${esc(r.detail)}</span>` : ""}</td>
+        <td>${esc(r.reporter_name || "—")}</td>
+        <td style="white-space:nowrap">${new Date(r.created_at).toLocaleDateString()}</td>
+        <td>${r.resolved ? '<span class="tag ok">Resolved</span>' : '<span class="tag warn">Open</span>'}</td>
+        <td>${r.resolved ? "" : `<button class="mini" data-resolve="${esc(r.id)}">Resolve</button>`}</td>
+      </tr>`).join("")}</tbody></table>`;
+  el.querySelectorAll("[data-resolve]").forEach((b) => {
+    b.onclick = async () => {
+      b.disabled = true; b.textContent = "…";
+      const { err } = await rpc("admin_resolve_report", { p_id: b.dataset.resolve });
+      if (err) { b.disabled = false; b.textContent = "Retry"; return; }
+      loadReports();
+    };
   });
 }
+
+async function loadChurn() {
+  const el = $("churn");
+  const { data: d, err } = await rpc("admin_offboarding");
+  if (err) return panelError(el, "Churn", err);
+  const where = Object.entries(d.where_met || {}).sort((a, b) => b[1] - a[1]);
+  el.innerHTML = `
+    <div class="card stat"><div class="label">Deleted</div>
+      <div class="value">${num(d.deleted_total)}</div><div class="sub">accounts removed</div></div>
+    <div class="card stat accent"><div class="label">Met someone</div>
+      <div class="value">${num(d.met_someone)}</div><div class="sub">the good kind of churn</div></div>
+    <div class="card stat"><div class="label">Paused</div>
+      <div class="value">${num(d.paused)}</div><div class="sub">may come back</div></div>
+    <div class="card"><div class="label" style="color:var(--muted);font-size:11.5px;
+      font-weight:700;letter-spacing:.09em;text-transform:uppercase">Where they met</div>
+      <div style="margin-top:12px">${
+        where.length
+          ? where.map(([k, v]) => `<div class="bar-row" style="grid-template-columns:1fr 40px">
+              <span class="k">${esc(k)}</span><span class="v">${num(v)}</span></div>`).join("")
+          : `<div class="empty" style="padding:8px 0">No data yet.</div>`
+      }</div></div>`;
+}
+
 boot();
 </script>
 </body>

@@ -145,11 +145,7 @@ export default function MatchProfileScreen() {
 
   const toggleVoice = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (!audioUrl) {
-      // Demo toggle for visual experience
-      setVoicePlaying(!voicePlaying);
-      return;
-    }
+    if (!audioUrl) return; // no recording — the card isn't rendered anyway
     if (voicePlaying) {
       voicePlayer.pause();
       setVoicePlaying(false);
@@ -313,7 +309,7 @@ export default function MatchProfileScreen() {
         </View>
 
         {/* ── 2. Why You Matched Section (Stitch Gauge Card with Animations) ── */}
-        <WhyMatchedCard otherId={otherId} score={94} />
+        <WhyMatchedCard otherId={otherId} />
 
         {/* ── 3. Hinge-Style Prompt Cards ── */}
         {activePrompts.map((p, idx) => (
@@ -323,31 +319,34 @@ export default function MatchProfileScreen() {
           </View>
         ))}
 
-        {/* ── 4. Voice Note Audio Player Bar with Dancing Waveform ── */}
-        <TouchableOpacity activeOpacity={0.85} style={s.voiceNoteCard} onPress={toggleVoice}>
-          <View style={s.voicePlayCircle}>
-            <Ionicons name={voicePlaying ? "pause" : "play"} size={18} color="#0B0D14" />
-          </View>
-          <View style={s.voiceInfoCol}>
-            <Text style={s.voiceLabel}>{voicePlaying ? "PLAYING AUDIO..." : "VOICE NOTE"}</Text>
-            <View style={s.waveformRow}>
-              {WAVE_BARS.map((height, i) => (
-                <Animated.View
-                  key={i}
-                  style={[
-                    s.waveformBar,
-                    {
-                      height,
-                      backgroundColor: voicePlaying ? theme.gold : "#8B90A3",
-                      transform: [{ scaleY: waveformAnim[i] }],
-                    },
-                  ]}
-                />
-              ))}
+        {/* ── 4. Voice Note player — only when they actually recorded one.
+               Previously this rendered for everyone and fake-played on tap,
+               advertising a voice note that didn't exist. ── */}
+        {audioUrl && (
+          <TouchableOpacity activeOpacity={0.85} style={s.voiceNoteCard} onPress={toggleVoice}>
+            <View style={s.voicePlayCircle}>
+              <Ionicons name={voicePlaying ? "pause" : "play"} size={18} color="#0B0D14" />
             </View>
-          </View>
-          <Text style={s.voiceDuration}>0:15</Text>
-        </TouchableOpacity>
+            <View style={s.voiceInfoCol}>
+              <Text style={s.voiceLabel}>{voicePlaying ? "PLAYING AUDIO..." : "VOICE NOTE"}</Text>
+              <View style={s.waveformRow}>
+                {WAVE_BARS.map((height, i) => (
+                  <Animated.View
+                    key={i}
+                    style={[
+                      s.waveformBar,
+                      {
+                        height,
+                        backgroundColor: voicePlaying ? theme.gold : "#8B90A3",
+                        transform: [{ scaleY: waveformAnim[i] }],
+                      },
+                    ]}
+                  />
+                ))}
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* ── 5. Basics Section ── */}
         <View style={s.sectionCard}>
