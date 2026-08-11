@@ -1,145 +1,167 @@
 import React, { useCallback, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, ActivityIndicator } from "react-native";
+import {
+  View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image, FlatList,
+} from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
+import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import { theme } from "../theme";
 
-// Served exclusively by the likes-you edge function. Free tier receives
-// server-side pixelated thumbnails (identity destroyed before download);
-// Gold receives real profiles. The client cannot get more than it's sent.
-type Preview = { photo: string | null; super: boolean };
-type Liker = { id: string; name: string; age: number | null; city: string | null;
-  super: boolean; note: string | null; photo: string | null };
+type Liker = { name?: string; age?: number | null; photo: string | null;
+  super?: boolean; free?: boolean };
 
+// Who likes you — served entirely by the `likes-you` edge function (no RLS
+// policy exposes incoming swipes, so this is the only path). Free members
+// get ONE full reveal per week (stable pick, not re-rolled every load) plus
+// a blurred-silhouette count for everyone else — deliberately more generous
+// than the market norm of a hard paywall.
 export default function LikesScreen() {
+  const nav = useNavigation<any>();
   const [loading, setLoading] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [count, setCount] = useState(0);
-  const [previews, setPreviews] = useState<Preview[]>([]);
   const [likers, setLikers] = useState<Liker[]>([]);
-  const [fnMissing, setFnMissing] = useState(false);
-  const nav = useNavigation<any>();
+  const [daysToReveal, setDaysToReveal] = useState<number | null>(null);
 
-  useFocusEffect(useCallback(() => {
-    (async () => {
-      setLoading(true);
-      const { data, error } = await supabase.functions.invoke("likes-you");
-      if (error || !data) {
-        // Function not deployed yet — fall back to the count RPC.
-        setFnMissing(true);
-        const { data: c } = await supabase.rpc("likes_you_count");
-        setCount(c ?? 0);
-      } else {
-        setFnMissing(false);
-        setSubscribed(!!data.subscribed);
-        setCount(data.count ?? 0);
-        setPreviews(data.previews ?? []);
-        setLikers(data.likers ?? []);
-      }
-      setLoading(false);
-    })();
-  }, []));
+  const load = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase.functions.invoke("likes-you");
+    if (!error && data) {
+      setSubscribed(!!data.subscribed);
+      setCount(data.count ?? 0);
+      setLikers(data.subscribed ? (data.likers ?? []) : (data.previews ?? []));
+      setDaysToReveal(data.daysToReveal ?? null);
+    }
+    setLoading(false);
+  }, []);
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={theme.rose} /></View>;
+  useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  if (loading) return (
+    <View style={s.center}><AuroraShaderBackdrop /><ActivityIndicator color={theme.gold} /></View>
+  );
 
   return (
-    <ScrollView style={s.wrap} contentContainerStyle={{ padding: 22, paddingTop: 64, paddingBottom: 40 }}>
-      <Text style={s.title}>{count > 0 ? `${count} like${count > 1 ? "s" : ""}` : "Likes You"}</Text>
+    <View style={s.wrap}>
+      <AuroraShaderBackdrop />
+      <View style={s.header}>
+        <Text style={s.title}>{count} {count === 1 ? "person likes" : "people like"} you</Text>
+        <Text style={s.sub}>
+          {subscribed ? "You can see everyone." : "One full reveal a week, free — upgrade for all."}
+        </Text>
+      </View>
 
-      {subscribed ? (
-        <View style={s.grid}>
-          {likers.map((l) => (
-            <View key={l.id} style={s.cell}>
-              {l.photo
-                ? <Image source={{ uri: l.photo }} style={s.cellImg} />
-                : <View style={[s.cellImg, s.cellFallback]}><Text style={s.initial}>{l.name[0]}</Text></View>}
-              <View style={s.cellMeta}>
-                <Text style={s.cellName} numberOfLines={1}>
-                  {l.name}{l.age ? `, ${l.age}` : ""} {l.super ? "★" : ""}
-                </Text>
-                {l.note ? <Text style={s.cellNote} numberOfLines={2}>"{l.note}"</Text> : null}
-              </View>
-            </View>
-          ))}
-          {!likers.length && <Text style={s.empty}>No pending likes right now.</Text>}
-        </View>
-      ) : (
-        <View style={s.grid}>
-          {(count > 0 ? (previews.length ? previews : Array.from({ length: Math.min(count, 9) })
-              .map(() => ({ photo: null, super: false }))) : [])
-            .map((p, i) => (
-            <View key={i} style={[s.cell, s.cellBig, s.cellActive]}>
-              {p.photo ? (
-                // 24px pixelated source + light blur = Tinder-style tease
-                <Image source={{ uri: p.photo }} style={s.cellImg} blurRadius={2} />
+      <FlatList
+        data={likers}
+        keyExtractor={(_, i) => String(i)}
+        numColumns={2}
+        columnWrapperStyle={{ gap: 12 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: subscribed ? 30 : 130, gap: 12 }}
+        ListEmptyComponent={
+          <View style={s.empty}>
+            <Ionicons name="heart-outline" size={34} color={theme.muted} />
+            <Text style={s.emptyText}>No likes yet. Keep exploring — they'll show up here.</Text>
+          </View>
+        }
+        renderItem={({ item }) => {
+          const clear = subscribed || item.free;
+          return (
+            <View style={s.card}>
+              {clear && item.photo ? (
+                <Image source={{ uri: item.photo }} style={StyleSheet.absoluteFill} resizeMode="cover" />
+              ) : item.photo ? (
+                <Image source={{ uri: item.photo }} style={[StyleSheet.absoluteFill, s.blurredImg]}
+                  resizeMode="cover" blurRadius={18} />
               ) : (
-                <View style={[s.cellImg, s.cellFallback]}>
-                  <Ionicons name="heart" size={26} color={theme.rose} />
+                <View style={[StyleSheet.absoluteFill, s.placeholder]} />
+              )}
+              <View style={StyleSheet.absoluteFill}>
+                <LinearGradient colors={["transparent", "rgba(8,10,18,.85)"]}
+                  style={StyleSheet.absoluteFill} />
+              </View>
+              {item.super && (
+                <View style={s.superPill}>
+                  <Ionicons name="star" size={11} color="#fff" />
+                  <Text style={s.superText}>SUPER LIKE</Text>
                 </View>
               )}
-              {p.super && <Text style={s.superBadge}>★</Text>}
+              {item.free && !subscribed && (
+                <View style={s.freePill}>
+                  <Ionicons name="star" size={11} color={theme.onGold} />
+                  <Text style={s.freePillText}>FREE THIS WEEK</Text>
+                </View>
+              )}
+              {clear ? (
+                <View style={s.cardFooter}>
+                  <Text style={s.cardName}>{item.name}{item.age ? `, ${item.age}` : ""}</Text>
+                  {item.free && !subscribed && daysToReveal != null && (
+                    <Text style={s.cardSub}>Next reveal in {daysToReveal}d</Text>
+                  )}
+                </View>
+              ) : (
+                <View style={s.lockWrap}>
+                  <View style={s.lockCircle}><Ionicons name="lock-closed" size={20} color="#fff" /></View>
+                </View>
+              )}
             </View>
-          ))}
-          {count === 0 && Array.from({ length: 6 }).map((_, i) => (
-            <View key={i} style={s.cell}>
-              <Ionicons name="heart" size={24} color="rgba(236,72,153,.35)" />
-            </View>
-          ))}
-        </View>
-      )}
+          );
+        }}
+      />
 
-      {!subscribed && (
-        <View style={s.payCard}>
-          <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.payIcon}>
-            <Ionicons name="flash" size={22} color="#fff" />
-          </LinearGradient>
-          <Text style={s.payTitle}>
-            {count > 0 ? `${count} ${count > 1 ? "people like" : "person likes"} you` : "See who likes you with Gold"}
-          </Text>
-          <Text style={s.payBody}>
-            Match instantly with people who've already liked you — plus Top Picks, monthly Boost and advanced filters.
-          </Text>
-          <TouchableOpacity onPress={() => nav.navigate("Paywall")}>
-            <LinearGradient colors={[theme.gold, "#D1367F"]} style={s.payBtn}>
-              <Text style={{ color: "#1A1424", fontWeight: "800" }}>Get Dosti Connect Gold</Text>
-            </LinearGradient>
-          </TouchableOpacity>
-          {fnMissing && (
-            <Text style={s.devNote}>dev: likes-you function not deployed — showing count only</Text>
-          )}
+      {!subscribed && likers.length > 0 && (
+        <View style={s.upgradeBanner}>
+          <View style={s.upgradeInner}>
+            <Text style={s.upgradeLabel}>
+              <Ionicons name="ribbon" size={14} color={theme.purple} /> See everyone who likes you
+            </Text>
+            <TouchableOpacity onPress={() => nav.navigate("Paywall")}>
+              <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                style={s.upgradeBtn}>
+                <Text style={s.upgradeBtnText}>UPGRADE TO PLUS</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
-    </ScrollView>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg },
   center: { flex: 1, backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" },
-  title: { fontSize: 30, fontFamily: theme.serif, fontWeight: "600", color: theme.ink, marginBottom: 16 },
-  grid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  cell: { width: "31%", aspectRatio: 3 / 4, borderRadius: 12, backgroundColor: theme.card,
-    borderWidth: 1, borderColor: theme.line, alignItems: "center", justifyContent: "center",
-    overflow: "hidden" },
-  cellBig: { width: "47.5%" },
-  cellActive: { borderColor: "rgba(236,72,153,.45)" },
-  cellImg: { ...StyleSheet.absoluteFillObject },
-  cellFallback: { alignItems: "center", justifyContent: "center", backgroundColor: theme.card2 },
-  initial: { color: "rgba(255,255,255,.4)", fontSize: 34, fontWeight: "800" },
-  cellMeta: { position: "absolute", left: 0, right: 0, bottom: 0,
-    backgroundColor: "rgba(10,18,16,.65)", paddingHorizontal: 8, paddingVertical: 5 },
-  cellName: { color: "#fff", fontSize: 12, fontWeight: "700" },
-  cellNote: { color: "#D8D2E6", fontSize: 10, fontStyle: "italic", marginTop: 2 },
-  superBadge: { position: "absolute", top: 6, right: 8, color: "#6FA8C9", fontSize: 16 },
-  empty: { color: theme.muted, fontSize: 14 },
-  payCard: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
-    borderRadius: 20, padding: 20, marginTop: 22, alignItems: "center" },
-  payIcon: { width: 46, height: 46, borderRadius: 16, alignItems: "center",
-    justifyContent: "center", marginBottom: 12 },
-  payTitle: { color: theme.ink, fontSize: 17, fontWeight: "800", marginBottom: 6 },
-  payBody: { color: theme.muted, fontSize: 13, textAlign: "center", lineHeight: 19, marginBottom: 16 },
-  payBtn: { borderRadius: 999, paddingHorizontal: 22, paddingVertical: 12 },
-  devNote: { color: theme.muted, fontSize: 10, marginTop: 10 },
+  header: { paddingHorizontal: 20, paddingTop: 58, paddingBottom: 16 },
+  title: { color: theme.ink, fontSize: 24, fontFamily: theme.font.displayMd, letterSpacing: -0.5 },
+  sub: { color: theme.muted, fontSize: 13, marginTop: 6 },
+  empty: { alignItems: "center", marginTop: 60, paddingHorizontal: 30, gap: 12 },
+  emptyText: { color: theme.muted, fontSize: 14, textAlign: "center", lineHeight: 20 },
+
+  card: { flex: 1, aspectRatio: 3 / 4, borderRadius: theme.radii.md, overflow: "hidden",
+    backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line },
+  blurredImg: { opacity: 0.6 },
+  placeholder: { backgroundColor: theme.card2 },
+  superPill: { position: "absolute", top: 8, right: 8, flexDirection: "row", alignItems: "center",
+    gap: 3, backgroundColor: "rgba(138,63,252,0.85)", borderRadius: 999,
+    paddingHorizontal: 8, paddingVertical: 3 },
+  superText: { color: "#fff", fontSize: 8, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  freePill: { position: "absolute", top: 8, left: 8, flexDirection: "row", alignItems: "center",
+    gap: 3, backgroundColor: theme.gold, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3 },
+  freePillText: { color: theme.onGold, fontSize: 8, fontFamily: theme.font.black, letterSpacing: 0.5 },
+  cardFooter: { position: "absolute", left: 8, bottom: 8, right: 8 },
+  cardName: { color: "#fff", fontSize: 15, fontFamily: theme.font.bold },
+  cardSub: { color: "rgba(255,255,255,.75)", fontSize: 10.5, marginTop: 2 },
+  lockWrap: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
+  lockCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(8,10,18,.55)",
+    alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,.25)" },
+
+  upgradeBanner: { position: "absolute", left: 0, right: 0, bottom: 0, paddingHorizontal: 16,
+    paddingBottom: 22, paddingTop: 14, backgroundColor: theme.bg },
+  upgradeInner: { backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.lg, padding: 16, alignItems: "center", gap: 10, ...theme.shadow.floating },
+  upgradeLabel: { color: theme.ink, fontSize: 13, fontFamily: theme.font.semibold },
+  upgradeBtn: { width: "100%", borderRadius: 999, paddingVertical: 13, alignItems: "center",
+    ...theme.shadow.cta },
+  upgradeBtnText: { color: "#fff", fontFamily: theme.font.black, fontSize: 12.5, letterSpacing: 1 },
 });

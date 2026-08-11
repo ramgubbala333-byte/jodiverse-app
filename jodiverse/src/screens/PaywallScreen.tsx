@@ -4,7 +4,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import GlowBackdrop from "../components/GlowBackdrop";
+import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import GlassCard from "../components/GlassCard";
 import PressableScale from "../components/PressableScale";
 import { haptic } from "../lib/haptics";
@@ -69,7 +69,7 @@ export default function PaywallScreen() {
 
   return (
     <View style={s.wrap}>
-      <GlowBackdrop />
+      <AuroraShaderBackdrop />
       <ScrollView contentContainerStyle={{ padding: 22, paddingBottom: 40 + insets.bottom }}>
       <Text style={s.h1}>Deepen the{"\n"}connection</Text>
       <Text style={s.sub}>Premium tools built for high-intent dating. Reach and insight — never access to people.</Text>

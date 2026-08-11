@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView, Image,
+  View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, ScrollView, Image, Modal, FlatList,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -14,6 +14,20 @@ import { pickIntroVideo, uploadIntroVideo, removeIntroVideo, uploadIntroAudio,
 import { theme } from "../theme";
 
 const AUDIO_MAX_S = 30;
+const MAX_PROMPTS = 3;
+
+// Preset prompt questions — Hinge-style. Likes on prompts convert to real
+// dates ~47% better than likes on photos alone (2024 industry data), so this
+// replaces "just a bio" as the primary way people express personality.
+const PROMPT_QUESTIONS = [
+  "My ideal weekend", "I'm looking for...", "Two truths and a lie",
+  "A random fact I love", "My simple pleasures", "Together, we could...",
+  "The way to win me over", "I'll know it's time to delete this app when...",
+  "My most controversial opinion", "Green flags I look for",
+  "A life goal of mine", "My love language is",
+];
+
+type Prompt = { q: string; a: string };
 
 const TRAIT_LABEL: Record<string, string> = {
   good_listener: "🎧 Good listener", funny: "😄 Funny", curious: "🔍 Curious",
@@ -44,6 +58,10 @@ export default function ProfileScreen() {
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [mediaBusy, setMediaBusy] = useState(false);
   const [myTraits, setMyTraits] = useState<Record<string, number>>({});
+  const [prompts, setPrompts] = useState<Prompt[]>([]);
+  const [editSlot, setEditSlot] = useState<number | null>(null); // which slot (0-2) is being edited
+  const [pickedQ, setPickedQ] = useState<string | null>(null);
+  const [draftA, setDraftA] = useState("");
   const nav = useNavigation<any>();
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
@@ -55,7 +73,7 @@ export default function ProfileScreen() {
     if (!user) return;
     setUid(user.id);
     const { data } = await supabase.from("profiles")
-      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active")
+      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active, prompts")
       .eq("id", user.id).maybeSingle();
     if (data) {
       setName(data.display_name); setBio(data.bio ?? ""); setCity(data.city ?? "");
@@ -63,6 +81,7 @@ export default function ProfileScreen() {
       setVerified(data.is_verified); setActive(data.is_active);
       setHasVideo(!!data.video_path);
       setAudioUrl(data.audio_path ? await signMediaPath(data.audio_path) : null);
+      setPrompts(Array.isArray(data.prompts) ? data.prompts : []);
     }
     setPhotos(await listOwnPhotos(user.id));
     const { data: tr } = await supabase.rpc("get_traits", { uid: user.id });
@@ -75,11 +94,31 @@ export default function ProfileScreen() {
     if (!uid) return;
     // Update ONLY editable fields — never resend birthdate/gender.
     const { error } = await supabase.from("profiles")
-      .update({ display_name: name.trim(), bio: bio.trim() || null, city: city.trim() || null })
+      .update({ display_name: name.trim(), bio: bio.trim() || null, city: city.trim() || null, prompts })
       .eq("id", uid);
-    // Refresh the semantic embedding when the bio changes (fire-and-forget).
+    // Refresh the semantic embedding when the bio/prompts change (fire-and-forget).
     if (!error) supabase.functions.invoke("embed-profile").catch(() => {});
     Alert.alert(error ? "Save failed" : "Saved", error?.message ?? "Profile updated.");
+  };
+
+  const openSlot = (slot: number) => {
+    setEditSlot(slot);
+    setPickedQ(prompts[slot]?.q ?? null);
+    setDraftA(prompts[slot]?.a ?? "");
+  };
+
+  const savePrompt = () => {
+    if (editSlot === null || !pickedQ || !draftA.trim()) return;
+    setPrompts((cur) => {
+      const next = [...cur];
+      next[editSlot] = { q: pickedQ, a: draftA.trim() };
+      return next;
+    });
+    setEditSlot(null); setPickedQ(null); setDraftA("");
+  };
+
+  const removePrompt = (slot: number) => {
+    setPrompts((cur) => cur.filter((_, i) => i !== slot));
   };
 
   const addPhoto = async () => {
@@ -318,6 +357,39 @@ export default function ProfileScreen() {
         )}
       </View>
 
+      {/* My Prompts — Hinge-style, the primary way to show personality */}
+      <View style={s.sectionHead}>
+        <View style={s.promptsHeadRow}>
+          <View style={s.sectionTitleRow}>
+            <Ionicons name="chatbox-ellipses" size={16} color={theme.gold} />
+            <Text style={s.sectionTitle}>My Prompts</Text>
+          </View>
+          <View style={s.promptsCountPill}>
+            <Text style={s.promptsCountText}>{prompts.length}/{MAX_PROMPTS} Completed</Text>
+          </View>
+        </View>
+        <Text style={s.sectionHint}>Answer a few — these show up in Discover, not just your bio.</Text>
+      </View>
+      <View style={{ paddingHorizontal: 22, gap: 10 }}>
+        {prompts.map((p, i) => (
+          <TouchableOpacity key={i} style={s.promptFilled} onPress={() => openSlot(i)}>
+            <View style={{ flex: 1 }}>
+              <Text style={s.promptFilledQ}>{p.q}</Text>
+              <Text style={s.promptFilledA} numberOfLines={2}>{p.a}</Text>
+            </View>
+            <TouchableOpacity onPress={() => removePrompt(i)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={18} color={theme.muted} />
+            </TouchableOpacity>
+          </TouchableOpacity>
+        ))}
+        {prompts.length < MAX_PROMPTS && (
+          <TouchableOpacity style={s.promptEmpty} onPress={() => openSlot(prompts.length)}>
+            <Ionicons name="add" size={18} color={theme.purple} />
+            <Text style={s.promptEmptyText}>Pick a question</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
       {/* Intro video */}
       <SectionHeader icon="videocam" title="Intro video"
         hint={`A ${VIDEO_MIN_S}–${VIDEO_MAX_S} sec clip — profiles with video get more replies.`} />
@@ -391,6 +463,51 @@ export default function ProfileScreen() {
       <TouchableOpacity style={s.ghost} onPress={() => supabase.auth.signOut()}>
         <Text style={s.ghostText}>Sign out</Text>
       </TouchableOpacity>
+
+      {/* prompt editor: pick a question, then write an answer */}
+      <Modal visible={editSlot !== null} transparent animationType="fade"
+        onRequestClose={() => setEditSlot(null)}>
+        <View style={s.modalBg}>
+          <View style={s.modalCard}>
+            {!pickedQ ? (
+              <>
+                <Text style={s.modalTitle}>Pick a question</Text>
+                <FlatList data={PROMPT_QUESTIONS.filter((q) =>
+                    q === prompts[editSlot ?? -1]?.q || !prompts.some((p) => p.q === q))}
+                  keyExtractor={(q) => q} style={{ maxHeight: 340 }}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity style={s.qRow} onPress={() => setPickedQ(item)}>
+                      <Text style={s.qRowText}>{item}</Text>
+                      <Ionicons name="chevron-forward" size={16} color={theme.muted} />
+                    </TouchableOpacity>
+                  )} />
+                <TouchableOpacity style={s.modalGhost} onPress={() => setEditSlot(null)}>
+                  <Text style={s.modalGhostText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <Text style={s.modalTitle}>{pickedQ}</Text>
+                <TextInput style={s.modalInput} value={draftA} onChangeText={setDraftA}
+                  placeholder="Your answer…" placeholderTextColor={theme.muted}
+                  maxLength={150} multiline autoFocus />
+                <Text style={s.counter}>{draftA.length}/150</Text>
+                <View style={s.modalRow}>
+                  <TouchableOpacity style={s.modalGhostBtn} onPress={() => setPickedQ(null)}>
+                    <Text style={s.modalGhostText}>Back</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={{ flex: 1 }} onPress={savePrompt} disabled={!draftA.trim()}>
+                    <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                      style={[s.modalSend, !draftA.trim() && { opacity: 0.5 }]}>
+                      <Text style={s.modalSendText}>Save</Text>
+                    </LinearGradient>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   );
 }
@@ -512,4 +629,37 @@ const s = StyleSheet.create({
   saveText: { color: "#fff", fontFamily: theme.font.black, fontSize: 16 },
   ghost: { alignItems: "center", padding: 16, marginTop: 4 },
   ghostText: { color: theme.muted, fontFamily: theme.font.bold, fontSize: 14 },
+
+  // prompts
+  promptsHeadRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  promptsCountPill: { backgroundColor: theme.goldSoft, borderRadius: 999, paddingHorizontal: 10,
+    paddingVertical: 4 },
+  promptsCountText: { color: theme.gold, fontSize: 11, fontFamily: theme.font.bold },
+  promptFilled: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: theme.card,
+    borderWidth: 1, borderColor: "rgba(255,122,46,.3)", borderRadius: theme.radii.md, padding: 14,
+    ...theme.shadow.card },
+  promptFilledQ: { color: theme.gold, fontSize: 10.5, fontFamily: theme.font.black, letterSpacing: 1,
+    textTransform: "uppercase", marginBottom: 4 },
+  promptFilledA: { color: theme.ink, fontSize: 14, fontFamily: theme.font.medium, lineHeight: 19 },
+  promptEmpty: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8,
+    backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line, borderStyle: "dashed",
+    borderRadius: theme.radii.md, paddingVertical: 20 },
+  promptEmptyText: { color: theme.muted, fontSize: 13.5, fontFamily: theme.font.semibold },
+
+  // prompt-editor modal
+  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,.6)", justifyContent: "center", padding: 24 },
+  modalCard: { backgroundColor: theme.card, borderRadius: theme.radii.xl, padding: 20,
+    borderWidth: 1, borderColor: theme.line, ...theme.shadow.floating },
+  modalTitle: { color: theme.ink, fontSize: 17, fontFamily: theme.font.displayMd, marginBottom: 12 },
+  modalInput: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
+    borderRadius: theme.radii.md, padding: 12, color: theme.ink, minHeight: 70, textAlignVertical: "top" },
+  modalRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14 },
+  modalGhost: { alignItems: "center", paddingVertical: 14, marginTop: 8 },
+  modalGhostBtn: { paddingHorizontal: 14, paddingVertical: 12 },
+  modalGhostText: { color: theme.muted, fontFamily: theme.font.bold },
+  modalSend: { borderRadius: 999, padding: 14, alignItems: "center" },
+  modalSendText: { color: "#fff", fontFamily: theme.font.black, fontSize: 14.5 },
+  qRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+    paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: theme.line },
+  qRowText: { color: theme.ink, fontSize: 14.5, fontFamily: theme.font.medium, flex: 1 },
 });

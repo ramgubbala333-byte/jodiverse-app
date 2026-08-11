@@ -13,6 +13,7 @@ import { supabase } from "../lib/supabase";
 import { listUserPhotos } from "../lib/photos";
 import { signMediaPath } from "../lib/media";
 import { withEmoji } from "../lib/interests";
+import WhyMatchedCard from "../components/WhyMatchedCard";
 import { theme } from "../theme";
 
 type Params = { otherId: string; name: string; matchId?: string; self?: boolean };
@@ -173,6 +174,13 @@ export default function MatchProfileScreen() {
           </View>
         ) : null}
       </View>
+
+      {/* the core differentiator: why the algorithm actually paired you two */}
+      {matchId && !self && (
+        <View style={{ marginHorizontal: 14, marginTop: 14 }}>
+          <WhyMatchedCard otherId={otherId} />
+        </View>
+      )}
 
       {/* facts strip card */}
       <View style={s.card}>

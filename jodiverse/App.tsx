@@ -18,11 +18,11 @@ import { theme } from "./src/theme";
 import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
+import LikesScreen from "./src/screens/LikesScreen";
 import MatchedScreen from "./src/screens/MatchedScreen";
 import CoinsScreen from "./src/screens/CoinsScreen";
 import ReferralScreen from "./src/screens/ReferralScreen";
 import TransactionsScreen from "./src/screens/TransactionsScreen";
-import MatchesScreen from "./src/screens/MatchesScreen";
 import ChatsScreen from "./src/screens/ChatsScreen";
 import ChatScreen from "./src/screens/ChatScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
@@ -59,8 +59,8 @@ function applyGlobalFont() {
 }
 
 const ICONS: Record<string, [string, string]> = {
-  Discover: ["flame", "flame-outline"],
-  Matches: ["heart", "heart-outline"],
+  Discover: ["albums", "albums-outline"],
+  Likes: ["search", "search-outline"],
   Chat: ["chatbubbles", "chatbubbles-outline"],
   Profile: ["person", "person-outline"],
 };
@@ -92,7 +92,7 @@ function Tabs() {
       })}
     >
       <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Matches" component={MatchesScreen} />
+      <Tab.Screen name="Likes" component={LikesScreen} />
       <Tab.Screen name="Chat" component={ChatsScreen} />
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>

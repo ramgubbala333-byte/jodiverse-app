@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Image, Alert,
-  Modal, TextInput, ScrollView,
+  Modal, TextInput, ScrollView, Animated,
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { LinearGradient } from "expo-linear-gradient";
@@ -9,23 +9,28 @@ import { Ionicons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase";
 import { deckAllPhotoUrls, listOwnPhotos } from "../lib/photos";
 import { withEmoji } from "../lib/interests";
+import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import { theme } from "../theme";
 
 const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
 
+type Prompt = { q: string; a: string };
 type P = { id: string; display_name: string; age: number; city: string | null;
   bio: string | null; relationship_goal: string | null; is_verified: boolean;
   faith: string | null; languages: string[] | null; diet: string | null;
   distance_band: string | null; recently_active: boolean;
-  interests: string[] | null; new_here: boolean; occupation: string | null };
+  interests: string[] | null; new_here: boolean; occupation: string | null;
+  prompts: Prompt[] | null };
 
 // Which element the pending like is attached to — the comment becomes the
 // opening line in chat, same as Hinge's "like a specific thing" mechanic.
-type LikeTarget = { kind: "profile" | "photo" | "bio" | "interest"; label: string } | null;
+type LikeTarget = { kind: "profile" | "photo" | "bio" | "interest" | "prompt";
+  label: string; superLike?: boolean } | null;
 
 // Curated deck: one profile at a time, full profile visible up front (photos,
-// bio, facts). You like a specific photo/bio/interest — or the profile as a
-// whole — optionally with a comment, which becomes the match's opening line.
+// prompts, bio, facts). You like a specific photo/prompt/bio/interest — or
+// the profile as a whole — optionally with a comment that becomes the
+// match's opening line. Rewind and Super Like are premium (server-gated).
 export default function DiscoverScreen() {
   const nav = useNavigation<any>();
   const [deck, setDeck] = useState<P[]>([]);
@@ -35,7 +40,21 @@ export default function DiscoverScreen() {
   const [busy, setBusy] = useState(false);
   const [likeTarget, setLikeTarget] = useState<LikeTarget>(null);
   const [comment, setComment] = useState("");
+  const [toast, setToast] = useState<{ icon: string; text: string } | null>(null);
   const myPhoto = useRef<string | null>(null);
+  const toastAnim = useRef(new Animated.Value(0)).current;
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (icon: string, text: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast({ icon, text });
+    toastAnim.setValue(0);
+    Animated.timing(toastAnim, { toValue: 1, duration: 220, useNativeDriver: true }).start();
+    toastTimer.current = setTimeout(() => {
+      Animated.timing(toastAnim, { toValue: 0, duration: 220, useNativeDriver: true })
+        .start(() => setToast(null));
+    }, 2400);
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -66,14 +85,16 @@ export default function DiscoverScreen() {
   const openLike = (target: LikeTarget) => { setComment(""); setLikeTarget(target); };
 
   const confirmLike = async () => {
-    if (!current) return;
+    if (!current || !likeTarget) return;
     setBusy(true);
     const { data: { user } } = await supabase.auth.getUser();
     setBusy(false);
     if (!user) return;
     const note = comment.trim() || null;
+    const wasSuper = !!likeTarget.superLike;
     setLikeTarget(null);
-    await sendSwipe(current, "like", note);
+    await sendSwipe(current, wasSuper ? "super" : "like", note);
+    if (note) showToast("check_circle", "Message sent — they'll see your comment first");
   };
 
   const pass = async () => {
@@ -81,7 +102,24 @@ export default function DiscoverScreen() {
     await sendSwipe(current, "pass", null);
   };
 
-  const sendSwipe = async (target: P, direction: "like" | "pass", note: string | null) => {
+  const superLike = () => {
+    if (!current) return;
+    openLike({ kind: "profile", label: current.display_name, superLike: true });
+  };
+
+  const rewind = async () => {
+    const { data, error } = await supabase.rpc("rewind_last_swipe");
+    if (error?.message?.includes("REWIND_REQUIRES_PLUS")) {
+      Alert.alert("Rewind is a Plus feature",
+        "Undo your last swipe with Plus — never miss out on a good match.",
+        [{ text: "Later", style: "cancel" }, { text: "See plans", onPress: () => nav.navigate("Paywall") }]);
+      return;
+    }
+    if (data) { showToast("replay", "Rewound!"); load(); }
+    else showToast("info", "Nothing to rewind");
+  };
+
+  const sendSwipe = async (target: P, direction: "like" | "pass" | "super", note: string | null) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const { error } = await supabase.from("swipes")
@@ -92,13 +130,19 @@ export default function DiscoverScreen() {
         [{ text: "Later", style: "cancel" }, { text: "See plans", onPress: () => nav.navigate("Paywall") }]);
       return;
     }
-    if (direction === "like") {
+    if (error?.message?.includes("SUPER_REQUIRES_PREMIUM")) {
+      Alert.alert("Super Likes are premium",
+        "Stand out from the crowd — you're 3× more likely to match with a Super Like.",
+        [{ text: "Later", style: "cancel" }, { text: "See plans", onPress: () => nav.navigate("Paywall") }]);
+      return;
+    }
+    if (direction !== "pass") {
       const [a, b] = [user.id, target.id].sort();
       const { data: match } = await supabase.from("matches")
         .select("id").eq("a", a).eq("b", b).maybeSingle();
       if (match) {
         nav.navigate("Matched", {
-          matchId: match.id, name: target.display_name,
+          matchId: match.id, name: target.display_name, otherId: target.id,
           theirPhoto: photoUrls[target.id]?.[0] ?? null, myPhoto: myPhoto.current,
         });
         return;
@@ -116,6 +160,7 @@ export default function DiscoverScreen() {
 
   if (!current) return (
     <View style={s.center}>
+      <AuroraShaderBackdrop />
       <LinearGradient colors={[...theme.grad]} style={s.emptyBadge}>
         <Ionicons name="people" size={30} color="#fff" />
       </LinearGradient>
@@ -128,9 +173,23 @@ export default function DiscoverScreen() {
   const urls = photoUrls[current.id] ?? [];
   const facts = [current.relationship_goal, current.faith, current.diet,
     ...(current.languages ?? []).slice(0, 2)].filter(Boolean) as string[];
+  const prompts = current.prompts ?? [];
 
   return (
     <View style={s.wrap}>
+      <AuroraShaderBackdrop />
+
+      {/* toasts */}
+      {toast && (
+        <Animated.View style={[s.toast, {
+          opacity: toastAnim,
+          transform: [{ translateY: toastAnim.interpolate({ inputRange: [0, 1], outputRange: [-12, 0] }) }],
+        }]}>
+          <Ionicons name={toast.icon as any} size={16} color={theme.gold} />
+          <Text style={s.toastText}>{toast.text}</Text>
+        </Animated.View>
+      )}
+
       <View style={s.header}>
         <Text style={s.brand}>{WORDMARK}</Text>
         <TouchableOpacity hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -185,6 +244,18 @@ export default function DiscoverScreen() {
           </View>
         )}
 
+        {/* structured prompts — Hinge-style, each individually likeable */}
+        {prompts.map((p, i) => (
+          <View key={`${p.q}-${i}`} style={s.promptCard}>
+            <Text style={s.promptQ}>{p.q}</Text>
+            <Text style={s.promptText}>{p.a}</Text>
+            <TouchableOpacity style={s.promptLikeBtn} onPress={() =>
+              openLike({ kind: "prompt", label: `"${p.q}"` })}>
+              <Ionicons name="heart" size={18} color={theme.gold} />
+            </TouchableOpacity>
+          </View>
+        ))}
+
         {/* bio — tap the heart to like their answer specifically */}
         {current.bio ? (
           <View style={s.promptCard}>
@@ -227,10 +298,16 @@ export default function DiscoverScreen() {
         ) : null}
       </ScrollView>
 
-      {/* action bar — pass / like the whole profile */}
+      {/* action bar — rewind / pass / super like / like */}
       <View style={s.actions}>
+        <TouchableOpacity style={s.miniBtn} onPress={rewind}>
+          <Ionicons name="refresh" size={20} color={theme.muted} />
+        </TouchableOpacity>
         <TouchableOpacity style={s.passBtn} onPress={pass}>
           <Ionicons name="close" size={30} color={theme.danger} />
+        </TouchableOpacity>
+        <TouchableOpacity style={[s.miniBtn, s.superBtn]} onPress={superLike}>
+          <Ionicons name="star" size={20} color={theme.purple} />
         </TouchableOpacity>
         <TouchableOpacity style={s.likeBtn}
           onPress={() => openLike({ kind: "profile", label: current.display_name })}>
@@ -245,7 +322,9 @@ export default function DiscoverScreen() {
         onRequestClose={() => setLikeTarget(null)}>
         <View style={s.modalBg}>
           <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Like {likeTarget?.label}</Text>
+            <Text style={s.modalTitle}>
+              {likeTarget?.superLike ? "⭐ Super Like " : "Like "}{likeTarget?.label}
+            </Text>
             <Text style={s.modalSub}>
               Add a comment and it becomes your opening line if you match.
             </Text>
@@ -260,7 +339,9 @@ export default function DiscoverScreen() {
                 <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                   style={s.modalSend}>
                   {busy ? <ActivityIndicator color="#fff" /> : (
-                    <Text style={s.modalSendText}>{comment.trim() ? "Send like" : "Like"}</Text>
+                    <Text style={s.modalSendText}>
+                      {comment.trim() ? "Send like" : likeTarget?.superLike ? "Super Like" : "Like"}
+                    </Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -278,6 +359,12 @@ const s = StyleSheet.create({
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     paddingHorizontal: 20, paddingTop: 58, paddingBottom: 10 },
   brand: { color: theme.gold, fontSize: 20, fontFamily: theme.font.displayMd, letterSpacing: -0.4 },
+
+  toast: { position: "absolute", top: 54, left: 16, right: 16, zIndex: 50,
+    flexDirection: "row", alignItems: "center", gap: 8, alignSelf: "center",
+    backgroundColor: theme.card, borderWidth: 1, borderColor: theme.line,
+    borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10, ...theme.shadow.floating },
+  toastText: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.semibold, flexShrink: 1 },
 
   emptyBadge: { width: 64, height: 64, borderRadius: 24, alignItems: "center",
     justifyContent: "center", marginBottom: 18 },
@@ -313,15 +400,23 @@ const s = StyleSheet.create({
   promptHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between",
     marginBottom: 10 },
   promptLabel: { color: theme.muted, fontSize: 10.5, fontFamily: theme.font.black, letterSpacing: 1.5 },
-  promptText: { color: theme.ink, fontSize: 15, lineHeight: 22, fontFamily: theme.font.medium },
+  promptQ: { color: theme.gold, fontSize: 10.5, fontFamily: theme.font.black, letterSpacing: 1.5,
+    textTransform: "uppercase", marginBottom: 10, fontStyle: "italic" },
+  promptText: { color: theme.ink, fontSize: 15, lineHeight: 22, fontFamily: theme.font.medium,
+    paddingRight: 30 },
+  promptLikeBtn: { position: "absolute", bottom: 14, right: 14, width: 34, height: 34, borderRadius: 17,
+    backgroundColor: theme.card2, alignItems: "center", justifyContent: "center" },
   chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   chip: { borderWidth: 1, borderColor: "rgba(255,122,46,.5)", backgroundColor: theme.goldSoft,
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
   chipText: { color: theme.gold, fontSize: 12, fontFamily: theme.font.semibold },
 
   actions: { position: "absolute", left: 0, right: 0, bottom: 0, flexDirection: "row",
-    alignItems: "center", justifyContent: "center", gap: 20, paddingBottom: 26, paddingTop: 14,
+    alignItems: "center", justifyContent: "center", gap: 16, paddingBottom: 26, paddingTop: 14,
     backgroundColor: theme.bg },
+  miniBtn: { width: 46, height: 46, borderRadius: 23, backgroundColor: theme.card,
+    borderWidth: 1.5, borderColor: theme.line, alignItems: "center", justifyContent: "center" },
+  superBtn: { borderColor: "rgba(138,63,252,.4)" },
   passBtn: { width: 62, height: 62, borderRadius: 31, backgroundColor: theme.card,
     borderWidth: 1.5, borderColor: theme.line, alignItems: "center", justifyContent: "center",
     ...theme.shadow.card },

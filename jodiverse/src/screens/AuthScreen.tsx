@@ -8,7 +8,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { supabase } from "../lib/supabase";
 import { signInWithGoogle, signInWithFacebook, sendPhoneOtp, verifyPhoneOtp } from "../lib/auth";
-import GlowBackdrop from "../components/GlowBackdrop";
+import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import { theme } from "../theme";
 
 const GENDERS = ["Woman", "Man", "Non-binary"] as const;
@@ -124,7 +124,7 @@ export default function AuthScreen() {
   if (page === "auth" || page === "otp") {
     return (
       <KeyboardAvoidingView style={s.wrap} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-        <GlowBackdrop />
+        <AuroraShaderBackdrop />
         <View style={[s.topBar, { paddingTop: 14 + insets.top, backgroundColor: "transparent",
           borderBottomWidth: 0 }]}>
           <TouchableOpacity onPress={() => setPage(page === "otp" ? "auth" : "landing")}
@@ -315,7 +315,7 @@ export default function AuthScreen() {
   // ── Landing — focused hero + login options (matches the Stitch design) ───
   return (
     <View style={s.wrap}>
-      <GlowBackdrop />
+      <AuroraShaderBackdrop />
       <ScrollView contentContainerStyle={[s.landingBody,
         { paddingTop: insets.top + 20, paddingBottom: 30 + insets.bottom }]}
         showsVerticalScrollIndicator={false}>

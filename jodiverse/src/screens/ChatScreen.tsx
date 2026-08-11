@@ -44,7 +44,14 @@ export default function ChatScreen() {
   const [sendingImg, setSendingImg] = useState(false);
   const [giftOpen, setGiftOpen] = useState(false);
   const [coinBalance, setCoinBalance] = useState<number | null>(null);
+  const [verified, setVerified] = useState(true); // assume true until loaded, avoids a banner flash
   const list = useRef<FlatList>(null);
+
+  // Anti-catfish: unverified accounts get ONE message until the other person
+  // replies (server-enforced trigger — this just mirrors it in the UI).
+  const myMsgCount = msgs.filter((m) => m.sender === me).length;
+  const otherReplied = msgs.some((m) => m.sender !== me);
+  const limited = !verified && myMsgCount >= 1 && !otherReplied;
 
   // Header: their photo top-right — tap it to open their profile.
   const [headerPhoto, setHeaderPhoto] = useState<string | null>(null);
@@ -84,6 +91,8 @@ export default function ChatScreen() {
       if (!user) return;
       setMe(user.id);
       supabase.rpc("my_coin_balance").then(({ data }) => setCoinBalance(data ?? 0));
+      supabase.from("profiles").select("is_verified").eq("id", user.id).maybeSingle()
+        .then(({ data: p }) => setVerified(!!p?.is_verified));
       const { data } = await supabase.from("messages")
         .select("*").eq("match_id", matchId).order("created_at");
       const rows = (data as Msg[]) ?? [];
@@ -107,7 +116,7 @@ export default function ChatScreen() {
 
   const send = async () => {
     const body = text.trim();
-    if (!body) return;
+    if (!body || limited) return;
     haptic.light();
     setText("");
     // Matches chat without limits — monetization lives on likes/boosts instead.
@@ -118,7 +127,9 @@ export default function ChatScreen() {
       // Surface the real reason instead of silently eating it — a swallowed
       // failure looks like "the app is locked and I can't do anything".
       Alert.alert("Message didn't send",
-        error.message?.includes("row-level security")
+        error.message?.includes("UNVERIFIED_LIMIT")
+          ? "You can send one message until they reply — this helps keep the community safe. Verify your profile to message freely."
+          : error.message?.includes("row-level security")
           ? "You're not in this conversation anymore — the match may have been removed or blocked."
           : error.message ?? "Please try again.");
     }
@@ -228,26 +239,41 @@ export default function ChatScreen() {
         </View>
       )}
 
+      {limited && (
+        <View style={s.safetyBanner}>
+          <Ionicons name="shield-checkmark-outline" size={16} color={theme.muted} />
+          <Text style={s.safetyBannerText}>
+            You can send one message until they reply — this helps keep the community safe.
+          </Text>
+        </View>
+      )}
+
       <View style={[s.inputRow, { paddingBottom: 12 + insets.bottom }]}>
-        <TouchableOpacity style={s.toolBtn} onPress={() => setShowEmoji((v) => !v)}>
+        <TouchableOpacity style={s.toolBtn} onPress={() => setShowEmoji((v) => !v)} disabled={limited}>
           <Ionicons name="happy-outline" size={22} color={showEmoji ? theme.rose : theme.muted} />
         </TouchableOpacity>
-        <TouchableOpacity style={s.toolBtn} onPress={sendPhoto} disabled={sendingImg}>
+        <TouchableOpacity style={s.toolBtn} onPress={sendPhoto} disabled={sendingImg || limited}>
           {sendingImg
             ? <ActivityIndicator size="small" color={theme.rose} />
             : <Ionicons name="image-outline" size={22} color={theme.muted} />}
         </TouchableOpacity>
-        <TouchableOpacity style={s.toolBtn}
+        <TouchableOpacity style={s.toolBtn} disabled={limited}
           onPress={() => { setGifOpen(true); setGifs([]); setGifQuery(""); searchGifs(""); }}>
           <Text style={s.gifText}>GIF</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.toolBtn} onPress={() => setGiftOpen(true)}>
+        <TouchableOpacity style={s.toolBtn} onPress={() => setGiftOpen(true)} disabled={limited}>
           <Ionicons name="gift-outline" size={22} color={theme.gold} />
         </TouchableOpacity>
-        <TextInput style={s.input} value={text} onChangeText={setText}
-          placeholder="Message" placeholderTextColor={theme.muted}
-          onSubmitEditing={send} returnKeyType="send" />
-        <TouchableOpacity style={s.send} onPress={send}>
+        {limited ? (
+          <View style={[s.input, s.inputDisabled]}>
+            <Text style={s.inputDisabledText}>Message sent — waiting for a reply</Text>
+          </View>
+        ) : (
+          <TextInput style={s.input} value={text} onChangeText={setText}
+            placeholder="Message" placeholderTextColor={theme.muted}
+            onSubmitEditing={send} returnKeyType="send" />
+        )}
+        <TouchableOpacity style={[s.send, limited && { opacity: 0.4 }]} onPress={send} disabled={limited}>
           <Ionicons name="arrow-up" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
@@ -335,6 +361,12 @@ const s = StyleSheet.create({
   theirsText: { color: theme.ink, fontSize: 14.5, fontFamily: theme.font.medium, lineHeight: 20 },
   emojiRow: { flexDirection: "row", justifyContent: "space-around", paddingVertical: 8,
     borderTopWidth: 1, borderTopColor: theme.line, backgroundColor: theme.card },
+  safetyBanner: { flexDirection: "row", alignItems: "flex-start", gap: 8, backgroundColor: theme.card2,
+    marginHorizontal: 12, marginTop: 8, padding: 10, borderRadius: theme.radii.md,
+    borderWidth: 1, borderColor: theme.line },
+  safetyBannerText: { color: theme.muted, fontSize: 12, flex: 1, lineHeight: 16.5 },
+  inputDisabled: { justifyContent: "center" },
+  inputDisabledText: { color: theme.muted, fontSize: 13.5, fontStyle: "italic" },
   inputRow: { flexDirection: "row", padding: 12, gap: 6, borderTopWidth: 1,
     borderTopColor: theme.line, backgroundColor: theme.bg, alignItems: "center" },
   toolBtn: { width: 34, height: 38, alignItems: "center", justifyContent: "center" },
