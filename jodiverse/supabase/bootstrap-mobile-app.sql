@@ -417,6 +417,9 @@ $$;
 -- ── 15. stale_matches (lounges-antighost-v15.sql, no voice deps) ────────
 -- Matches >24h old with zero messages + a shared interest, for the "say hi"
 -- nudge in Chats.
+-- DROP first: this project may already have an older version with a
+-- different OUT-parameter shape, which CREATE OR REPLACE can't change.
+drop function if exists stale_matches();
 create or replace function stale_matches()
 returns table (match_id uuid, other_id uuid, other_name text,
                shared_interest text, matched_at timestamptz)
@@ -437,6 +440,10 @@ language sql security definer stable as $$
 $$;
 
 -- ── 16. get_deck() — final version (advanced-features-v25.sql) ─────────
+-- DROP first: this project has an older get_deck(int) from a prior
+-- migration with a different OUT-parameter shape (confirmed — this is the
+-- exact error we hit). CREATE OR REPLACE can't change that shape.
+drop function if exists get_deck(int);
 create or replace function get_deck(limit_n int default 20)
 returns table (
   id uuid, display_name text, age int, gender text, bio text, city text,
@@ -602,6 +609,7 @@ language sql security definer stable as $$
   select coalesce((select balance from coin_wallet where user_id = auth.uid()), 0);
 $$;
 
+drop function if exists my_coin_ledger(int);
 create or replace function my_coin_ledger(p_lim int default 60)
 returns table (delta int, reason text, balance_after int, created_at timestamptz)
 language sql security definer stable as $$
@@ -839,6 +847,9 @@ end $$;
 -- ── 23. get_traits() — STUB. ProfileScreen calls this for trait chips; the
 -- real version was derived from voice-call peer feedback, which no longer
 -- exists. Returns empty so the UI just shows no chips (guarded client-side).
+-- DROP first: the old intelligence-v14.sql version (if present in this
+-- project) has a different OUT-parameter shape.
+drop function if exists get_traits(uuid);
 create or replace function get_traits(uid uuid)
 returns table (traits jsonb, sample_size int, is_self boolean)
 language sql stable as $$
