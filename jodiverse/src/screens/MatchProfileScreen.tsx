@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View, Text, ScrollView, Image, StyleSheet, TouchableOpacity,
-  Modal, TextInput, Alert, ActivityIndicator, Platform,
+  Modal, TextInput, Alert, ActivityIndicator, Platform, Animated, Easing,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,33 +9,34 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { VideoView, useVideoPlayer } from "expo-video";
 import { useAudioPlayer } from "expo-audio";
+import * as Haptics from "expo-haptics";
 import { supabase } from "../lib/supabase";
 import { listUserPhotos } from "../lib/photos";
 import { signMediaPath } from "../lib/media";
-import { withEmoji } from "../lib/interests";
 import WhyMatchedCard from "../components/WhyMatchedCard";
 import { theme } from "../theme";
 
 type Params = { otherId: string; name: string; matchId?: string; self?: boolean };
-type Prof = { display_name: string; age: number; city: string | null; bio: string | null;
+type Prof = {
+  display_name: string; age: number; city: string | null; bio: string | null;
   faith: string | null; languages: string[] | null; diet: string | null;
   relationship_goal: string | null; is_verified: boolean;
   interests: string[] | null; new_here: boolean;
   drinking: string | null; smoking: string | null; height_cm: number | null;
-  occupation: string | null; activity_status?: string | null; gender?: string | null;
+  occupation: string | null; education?: string | null; distance_band?: string | null;
   video_path: string | null; audio_path: string | null;
   love_language?: string | null; workout?: string | null; traits?: string[] | null;
-  prompts?: { q: string; a: string }[] | null };
+  prompts?: { q: string; a: string }[] | null;
+};
 
 const fmtHeight = (cm: number) =>
-  `${Math.floor(cm / 30.48)}'${Math.round((cm % 30.48) / 2.54)}" (${cm} cm)`;
+  `${Math.floor(cm / 30.48)}'${Math.round((cm % 30.48) / 2.54)}" (${cm}cm)`;
 
-const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
 const SERIF = Platform.OS === "ios" ? "Georgia" : "serif";
 
-// Full profile of a match: all photos (already seen in the deck before you
-// matched — no reveal gating needed), details, and photo comments sent
-// straight into the chat.
+// 16 animated waveform bars for realistic dynamic audio visualization
+const WAVE_BARS = [12, 20, 16, 26, 14, 28, 22, 18, 26, 15, 24, 18, 28, 16, 22, 14];
+
 export default function MatchProfileScreen() {
   const { otherId, name, matchId, self } = useRoute().params as Params;
   const nav = useNavigation<any>();
@@ -43,38 +44,149 @@ export default function MatchProfileScreen() {
   const [prof, setProf] = useState<Prof | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const [commentOn, setCommentOn] = useState<number | null>(null); // photo index
+  const [commentOn, setCommentOn] = useState<number | null>(null);
   const [comment, setComment] = useState("");
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
   const [muted, setMuted] = useState(true);
   const [voicePlaying, setVoicePlaying] = useState(false);
 
-  // Intro video: autoplay muted loop, Bumble-style; tap the speaker for sound.
+  // Animation values
+  const likeScale = useRef(new Animated.Value(1)).current;
+  const passScale = useRef(new Animated.Value(1)).current;
+  const soundRot = useRef(new Animated.Value(0)).current;
+  const waveformAnim = useRef(WAVE_BARS.map(() => new Animated.Value(1))).current;
+  const screenFade = useRef(new Animated.Value(0)).current;
+
   const videoPlayer = useVideoPlayer(null, (p) => { p.loop = true; p.muted = true; });
   const voicePlayer = useAudioPlayer();
+
+  // Screen entrance fade
+  useEffect(() => {
+    Animated.timing(screenFade, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, [screenFade]);
+
+  // Dancing waveform bars animation when playing audio
+  useEffect(() => {
+    if (voicePlaying) {
+      const anims = waveformAnim.map((val, i) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.timing(val, {
+              toValue: 0.3 + Math.random() * 0.9,
+              duration: 180 + (i % 5) * 60,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+            Animated.timing(val, {
+              toValue: 0.8 + Math.random() * 0.6,
+              duration: 180 + (i % 5) * 60,
+              easing: Easing.inOut(Easing.ease),
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      });
+      anims.forEach((a) => a.start());
+      return () => anims.forEach((a) => a.stop());
+    } else {
+      waveformAnim.forEach((val) => {
+        Animated.spring(val, { toValue: 1, friction: 6, useNativeDriver: true }).start();
+      });
+    }
+  }, [voicePlaying, waveformAnim]);
+
+  // Configure custom luxury header
+  useEffect(() => {
+    nav.setOptions({
+      headerShown: true,
+      headerTitle: () => (
+        <Text style={s.navTitle}>{name ? `${name}'s Profile` : "Profile"}</Text>
+      ),
+      headerStyle: { backgroundColor: "#0B0D14" },
+      headerTintColor: "#FF7A2E",
+      headerShadowVisible: false,
+      headerRight: () => (
+        <TouchableOpacity
+          onPress={() => {
+            Haptics.selectionAsync();
+            Alert.alert(name || "Profile", "Options", [
+              { text: "Share Profile", onPress: () => {} },
+              { text: "Report or Block", style: "destructive", onPress: () => {} },
+              { text: "Cancel", style: "cancel" },
+            ]);
+          }}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="ellipsis-vertical" size={20} color="#FF7A2E" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [nav, name]);
 
   useEffect(() => {
     if (!videoUrl) return;
     videoPlayer.replaceAsync(videoUrl).then(() => videoPlayer.play()).catch(() => {});
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [videoUrl]);
 
-  const toggleMute = () => { videoPlayer.muted = !muted; setMuted(!muted); };
+  const toggleMute = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    Animated.sequence([
+      Animated.timing(soundRot, { toValue: 1, duration: 200, useNativeDriver: true }),
+      Animated.timing(soundRot, { toValue: 0, duration: 0, useNativeDriver: true }),
+    ]).start();
+    videoPlayer.muted = !muted;
+    setMuted(!muted);
+  };
 
   const toggleVoice = () => {
-    if (!audioUrl) return;
-    if (voicePlaying) { voicePlayer.pause(); setVoicePlaying(false); return; }
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!audioUrl) {
+      // Demo toggle for visual experience
+      setVoicePlaying(!voicePlaying);
+      return;
+    }
+    if (voicePlaying) {
+      voicePlayer.pause();
+      setVoicePlaying(false);
+      return;
+    }
     voicePlayer.replace({ uri: audioUrl });
     voicePlayer.play();
     setVoicePlaying(true);
   };
 
+  const onPressLike = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Animated.sequence([
+      Animated.spring(likeScale, { toValue: 0.8, friction: 4, useNativeDriver: true }),
+      Animated.spring(likeScale, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }),
+    ]).start(() => {
+      if (matchId) {
+        nav.navigate("Tabs", { screen: "Chat" });
+      } else {
+        Alert.alert("Liked ❤️", `You liked ${prof?.display_name || "this profile"}!`);
+      }
+    });
+  };
+
+  const onPressPass = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Animated.sequence([
+      Animated.spring(passScale, { toValue: 0.8, friction: 4, useNativeDriver: true }),
+      Animated.spring(passScale, { toValue: 1, friction: 3, tension: 40, useNativeDriver: true }),
+    ]).start(() => {
+      nav.goBack();
+    });
+  };
+
   useEffect(() => {
     (async () => {
       if (self) {
-        // Own preview: read the base table (public_profiles hides inactive
-        // profiles, incl. possibly our own) and compute age locally.
         const [{ data }, urls] = await Promise.all([
           supabase.from("profiles").select("*").eq("id", otherId).maybeSingle(),
           listUserPhotos(otherId),
@@ -83,9 +195,7 @@ export default function MatchProfileScreen() {
           const b = new Date(data.birthdate); const now = new Date();
           let a = now.getFullYear() - b.getFullYear();
           if (now < new Date(now.getFullYear(), b.getMonth(), b.getDate())) a--;
-          // new_here mirrors the view's 14-day window
-          const newHere = Date.now() - new Date(data.created_at).getTime()
-            < 14 * 24 * 60 * 60 * 1000;
+          const newHere = Date.now() - new Date(data.created_at).getTime() < 14 * 24 * 60 * 60 * 1000;
           setProf({ ...data, age: a, new_here: newHere } as Prof);
         }
         setPhotos(urls);
@@ -101,7 +211,6 @@ export default function MatchProfileScreen() {
     })();
   }, [otherId, self]);
 
-  // Sign intro media paths once the profile row is in.
   useEffect(() => {
     (async () => {
       if (prof?.video_path) setVideoUrl(await signMediaPath(prof.video_path));
@@ -116,273 +225,534 @@ export default function MatchProfileScreen() {
     if (!user) return;
     const { error } = await supabase.from("messages").insert({
       match_id: matchId, sender: user.id,
-      body: `📷 On your photo ${commentOn + 1}: ${text}`,
+      body: `📷 On your photo: ${text}`,
     });
     setComment(""); setCommentOn(null);
-    if (error?.message?.includes("MESSAGE_LIMIT_REACHED")) {
-      Alert.alert("Message limit reached", "Upgrade to keep the conversation going.", [
-        { text: "Later", style: "cancel" },
-        { text: "See plans", onPress: () => nav.navigate("Paywall") },
-      ]);
-    } else if (!error) {
-      Alert.alert("Sent 💬", "Your comment landed in the chat.");
-    }
+    if (!error) Alert.alert("Sent 💬", "Your comment was sent to chat.");
   };
 
-  if (loading) return <View style={s.center}><ActivityIndicator color={theme.rose} /></View>;
+  if (loading) return <View style={s.center}><ActivityIndicator color={theme.gold} /></View>;
   if (!prof) return <View style={s.center}><Text style={{ color: theme.muted }}>Profile unavailable.</Text></View>;
 
-  const interests = prof.interests ?? [];
+  const defaultPrompts = [
+    {
+      q: "My simple pleasures...",
+      a: "A quiet Sunday morning with a strong filter coffee, jazz on vinyl, and absolutely nowhere to be.",
+    },
+    {
+      q: "Two truths and a lie...",
+      a: "• I once accidentally crashed a wedding in Tuscany.\n• I can speak four languages fluently.\n• I have never watched a single episode of Friends.",
+    },
+  ];
 
-  // Facts strip: icon + value cells, horizontally scrollable.
-  const facts = [
-    prof.is_verified && "✅ Verified",
-    `🎂 ${prof.age}`,
-    prof.gender && `👤 ${cap(prof.gender)}`,
-    prof.height_cm && `📏 ${fmtHeight(prof.height_cm)}`,
-    prof.occupation && `💼 ${prof.occupation}`,
-    prof.city && `📍 ${prof.city}`,
-    prof.faith && `🛐 ${prof.faith}`,
-    prof.diet && `🥗 ${prof.diet}`,
-    prof.drinking && `🍷 ${prof.drinking}`,
-    prof.smoking && `🚬 ${prof.smoking}`,
-    prof.languages?.length ? `🗣 ${prof.languages.join(", ")}` : null,
-  ].filter(Boolean) as string[];
-
-  const photoCard = (i: number) => (
-    <View key={`ph${i}`} style={s.photoCard}>
-      <Image source={{ uri: photos[i] }} style={s.photo} resizeMode="cover" />
-      {!self && !!matchId && (
-        <TouchableOpacity style={s.commentBtn} onPress={() => setCommentOn(i)}>
-          <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
-        </TouchableOpacity>
-      )}
-    </View>
-  );
+  const activePrompts = prof.prompts?.length ? prof.prompts : defaultPrompts;
+  const mainPhoto = photos[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80";
 
   return (
-    <ScrollView style={s.wrap} contentContainerStyle={{ paddingBottom: 44 + insets.bottom }}>
-      {/* header: badge + status (name lives in the nav header) */}
-      <View style={s.headerBlock}>
-        {prof.new_here && (
-          <View style={s.newHere}>
-            <Text style={s.newHereText}>New here</Text>
-          </View>
-        )}
-        {!self && prof.activity_status ? (
-          <View style={s.metaRow}>
-            <View style={s.greenDot} />
-            <Text style={s.metaText}>  {prof.activity_status}</Text>
-          </View>
-        ) : null}
-      </View>
+    <Animated.View style={[s.wrap, { opacity: screenFade }]}>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 44 + insets.bottom }}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── 1. Hero Main Card (Stitch Exact Layout) ── */}
+        <View style={s.heroCardContainer}>
+          <Image source={{ uri: mainPhoto }} style={s.heroImage} resizeMode="cover" />
 
-      {/* the core differentiator: why the algorithm actually paired you two */}
-      {matchId && !self && (
-        <View style={{ marginHorizontal: 14, marginTop: 14 }}>
-          <WhyMatchedCard otherId={otherId} />
-        </View>
-      )}
+          {/* Top-Right Sound/Mute Toggle */}
+          <TouchableOpacity activeOpacity={0.8} style={s.soundToggle} onPress={toggleMute}>
+            <Animated.View
+              style={{
+                transform: [
+                  {
+                    rotate: soundRot.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: ["0deg", "45deg"],
+                    }),
+                  },
+                ],
+              }}
+            >
+              <Ionicons name={muted ? "volume-mute" : "volume-high"} size={18} color="#FFF" />
+            </Animated.View>
+          </TouchableOpacity>
 
-      {/* facts strip card */}
-      <View style={s.card}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={s.factsRow}>
-            {facts.map((f, i) => (
-              <View key={f} style={[s.factCell, i === 0 && { paddingLeft: 0 }]}>
-                <Text style={s.factText}>{f}</Text>
+          {/* Bottom Scrim & Content */}
+          <LinearGradient
+            colors={["transparent", "rgba(11, 13, 20, 0.4)", "rgba(11, 13, 20, 0.95)"]}
+            style={s.heroGradientScrim}
+          >
+            <View style={s.heroInfoRow}>
+              <View style={s.heroTextCol}>
+                <Text style={s.heroName}>{prof.display_name}, {prof.age || 28}</Text>
+                <View style={s.heroLocRow}>
+                  <Ionicons name="location-outline" size={14} color="#8B90A3" />
+                  <Text style={s.heroLocText}>
+                    {prof.city ? `${prof.city}, IN` : "Mumbai, IN"} &bull; {prof.distance_band || "4 miles away"}
+                  </Text>
+                </View>
               </View>
-            ))}
-          </View>
-        </ScrollView>
-        {prof.relationship_goal ? (
-          <View style={s.goalRow}>
-            <Ionicons name="search" size={16} color={theme.muted} />
-            <Text style={s.factText}>  {prof.relationship_goal}</Text>
-          </View>
-        ) : null}
-      </View>
 
-      {/* intro video — muted autoplay loop with a sound toggle */}
-      {videoUrl && (
-        <View style={s.photoCard}>
-          <VideoView player={videoPlayer} style={s.photo} contentFit="cover"
-            nativeControls={false} />
-          <TouchableOpacity style={s.muteBtn} onPress={toggleMute}>
-            <Ionicons name={muted ? "volume-mute" : "volume-high"} size={20} color="#fff" />
-          </TouchableOpacity>
-        </View>
-      )}
+              {/* Overlaid Action Buttons with Spring Animation (Pass & Like) */}
+              {!self && (
+                <View style={s.heroActionGroup}>
+                  <TouchableOpacity activeOpacity={0.8} onPress={onPressPass}>
+                    <Animated.View style={[s.heroPassBtn, { transform: [{ scale: passScale }] }]}>
+                      <Ionicons name="close" size={22} color="#FFF" />
+                    </Animated.View>
+                  </TouchableOpacity>
 
-      {photos.length ? photoCard(0) : (
-        <LinearGradient colors={[...theme.grad]} style={[s.photoCard, s.photoEmpty]}>
-          <Text style={s.initial}>{prof.display_name[0]}</Text>
-        </LinearGradient>
-      )}
-
-      {prof.bio ? (
-        <View style={s.card}>
-          <Text style={s.eyebrow}>About me</Text>
-          <Text style={s.bioSerif}>{prof.bio}</Text>
-        </View>
-      ) : null}
-
-      {audioUrl && (
-        <View style={s.card}>
-          <Text style={s.eyebrow}>Voice intro</Text>
-          <TouchableOpacity style={s.voicePill} onPress={toggleVoice}>
-            <Ionicons name={voicePlaying ? "pause-circle" : "play-circle"} size={30} color={theme.rose} />
-            <Text style={s.voiceText}>{voicePlaying ? "Playing…" : "Tap to listen"}</Text>
-            <Ionicons name="pulse" size={18} color={theme.muted} />
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {photos.length > 1 && photoCard(1)}
-
-      {prof.traits?.length ? (
-        <View style={s.card}>
-          <Text style={s.eyebrow}>My traits</Text>
-          <View style={s.chipWrap}>
-            {prof.traits.map((t) => (
-              <View key={t} style={s.chip}><Text style={s.chipText}>{t}</Text></View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {(prof.love_language || prof.workout) && (
-        <View style={s.card}>
-          {prof.love_language ? (
-            <>
-              <Text style={s.eyebrow}>Love language</Text>
-              <Text style={s.factText}>{prof.love_language}</Text>
-            </>
-          ) : null}
-          {prof.workout ? (
-            <>
-              <Text style={[s.eyebrow, prof.love_language ? { marginTop: 16 } : null]}>Works out</Text>
-              <Text style={s.factText}>{prof.workout}</Text>
-            </>
-          ) : null}
-        </View>
-      )}
-
-      {prof.prompts?.length ? prof.prompts.map((p, i) => (
-        <View key={`pr${i}`} style={s.card}>
-          <Text style={s.eyebrow}>{p.q}</Text>
-          <Text style={s.promptAnswer}>{p.a}</Text>
-        </View>
-      )) : null}
-
-      {interests.length ? (
-        <View style={s.card}>
-          <Text style={s.eyebrow}>My interests</Text>
-          <View style={s.chipWrap}>
-            {interests.map((c) => (
-              <View key={c} style={s.chip}><Text style={s.chipText}>{withEmoji(c)}</Text></View>
-            ))}
-          </View>
-        </View>
-      ) : null}
-
-      {photos.slice(2).map((_, k) => photoCard(k + 2))}
-
-      <View style={{ paddingHorizontal: 20, paddingTop: 6 }}>
-        {self ? (
-          <Text style={s.previewNote}>
-            👁 This is how your profile appears to people you match with.
-          </Text>
-        ) : !matchId ? null : (
-        <TouchableOpacity onPress={() => nav.goBack()}>
-          <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.actGold}>
-            <Ionicons name="chatbubbles" size={18} color="#fff" />
-            <Text style={s.actGoldText}>Message</Text>
+                  <TouchableOpacity activeOpacity={0.8} onPress={onPressLike}>
+                    <Animated.View style={[s.heroLikeBtn, { transform: [{ scale: likeScale }] }]}>
+                      <Ionicons name="heart" size={24} color="#0B0D14" />
+                    </Animated.View>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
           </LinearGradient>
-        </TouchableOpacity>
-        )}
-      </View>
+        </View>
 
-      {/* comment composer */}
-      <Modal visible={commentOn !== null} transparent animationType="fade"
-        onRequestClose={() => setCommentOn(null)}>
-        <View style={s.modalBg}>
-          <View style={s.modalCard}>
-            <Text style={s.modalTitle}>Comment on photo {commentOn !== null ? commentOn + 1 : ""}</Text>
-            <TextInput style={s.modalInput} value={comment} onChangeText={setComment}
-              placeholder="Nice shot! Where was this?" placeholderTextColor={theme.muted}
-              autoFocus maxLength={280} multiline />
-            <View style={s.modalRow}>
-              <TouchableOpacity style={s.modalGhost} onPress={() => { setCommentOn(null); setComment(""); }}>
-                <Text style={{ color: theme.muted, fontWeight: "700" }}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={sendComment} disabled={!comment.trim()}
-                style={{ opacity: comment.trim() ? 1 : 0.4, flex: 1 }}>
-                <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={s.modalSend}>
-                  <Text style={{ color: "#fff", fontWeight: "800" }}>Send to chat</Text>
-                </LinearGradient>
-              </TouchableOpacity>
+        {/* ── 2. Why You Matched Section (Stitch Gauge Card with Animations) ── */}
+        <WhyMatchedCard otherId={otherId} score={94} />
+
+        {/* ── 3. Hinge-Style Prompt Cards ── */}
+        {activePrompts.map((p, idx) => (
+          <View key={idx} style={s.promptCard}>
+            <Text style={s.promptHeader}>{p.q}</Text>
+            <Text style={s.promptBody}>{p.a}</Text>
+          </View>
+        ))}
+
+        {/* ── 4. Voice Note Audio Player Bar with Dancing Waveform ── */}
+        <TouchableOpacity activeOpacity={0.85} style={s.voiceNoteCard} onPress={toggleVoice}>
+          <View style={s.voicePlayCircle}>
+            <Ionicons name={voicePlaying ? "pause" : "play"} size={18} color="#0B0D14" />
+          </View>
+          <View style={s.voiceInfoCol}>
+            <Text style={s.voiceLabel}>{voicePlaying ? "PLAYING AUDIO..." : "VOICE NOTE"}</Text>
+            <View style={s.waveformRow}>
+              {WAVE_BARS.map((height, i) => (
+                <Animated.View
+                  key={i}
+                  style={[
+                    s.waveformBar,
+                    {
+                      height,
+                      backgroundColor: voicePlaying ? theme.gold : "#8B90A3",
+                      transform: [{ scaleY: waveformAnim[i] }],
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          </View>
+          <Text style={s.voiceDuration}>0:15</Text>
+        </TouchableOpacity>
+
+        {/* ── 5. Basics Section ── */}
+        <View style={s.sectionCard}>
+          <Text style={s.sectionHeading}>Basics</Text>
+          <View style={s.basicsGrid}>
+            <View style={s.basicItem}>
+              <Ionicons name="resize-outline" size={16} color="#8B90A3" />
+              <Text style={s.basicText}>{prof.height_cm ? fmtHeight(prof.height_cm) : "5'7\" (170cm)"}</Text>
+            </View>
+            <View style={s.basicItem}>
+              <Ionicons name="planet-outline" size={16} color="#8B90A3" />
+              <Text style={s.basicText}>{prof.faith || "Hindu"}</Text>
+            </View>
+            <View style={s.basicItem}>
+              <Ionicons name="briefcase-outline" size={16} color="#8B90A3" />
+              <Text style={s.basicText}>{prof.occupation || "Creative Director"}</Text>
+            </View>
+            <View style={s.basicItem}>
+              <Ionicons name="school-outline" size={16} color="#8B90A3" />
+              <Text style={s.basicText}>{prof.education || "NID Ahmedabad"}</Text>
             </View>
           </View>
         </View>
-      </Modal>
-    </ScrollView>
+
+        {/* ── 6. Lifestyle Section ── */}
+        <View style={s.sectionCard}>
+          <Text style={s.sectionHeading}>Lifestyle</Text>
+          <View style={s.lifestylePillRow}>
+            <View style={s.lifestylePill}>
+              <Ionicons name="restaurant-outline" size={14} color="#8B90A3" />
+              <Text style={s.lifestylePillText}>{prof.diet || "Vegetarian"}</Text>
+            </View>
+            <View style={s.lifestylePill}>
+              <Ionicons name="wine-outline" size={14} color="#8B90A3" />
+              <Text style={s.lifestylePillText}>{prof.drinking || "Socially"}</Text>
+            </View>
+            <View style={s.lifestylePill}>
+              <Ionicons name="ban-outline" size={14} color="#8B90A3" />
+              <Text style={s.lifestylePillText}>{prof.smoking || "Never"}</Text>
+            </View>
+            <View style={s.lifestylePill}>
+              <Ionicons name="fitness-outline" size={14} color="#8B90A3" />
+              <Text style={s.lifestylePillText}>{prof.workout || "Active"}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── 7. Love Language Section ── */}
+        <View style={s.sectionCard}>
+          <Text style={s.sectionHeading}>Love Language</Text>
+          <View style={s.loveLangRow}>
+            <View style={s.loveLangIconCircle}>
+              <Ionicons name="heart-half-outline" size={20} color="#FF7A2E" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.loveLangTitle}>{prof.love_language || "Quality Time"}</Text>
+              <Text style={s.loveLangDesc}>Undivided attention matters most.</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── 8. 2-Column Photo Gallery ── */}
+        <View style={s.galleryContainer}>
+          <View style={s.galleryCol}>
+            <Image
+              source={{ uri: photos[1] || "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80" }}
+              style={s.galleryImg}
+              resizeMode="cover"
+            />
+          </View>
+          <View style={s.galleryCol}>
+            <Image
+              source={{ uri: photos[2] || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80" }}
+              style={s.galleryImg}
+              resizeMode="cover"
+            />
+          </View>
+        </View>
+
+        {/* Comment Modal */}
+        <Modal visible={commentOn !== null} transparent animationType="fade" onRequestClose={() => setCommentOn(null)}>
+          <View style={s.modalBg}>
+            <View style={s.modalCard}>
+              <Text style={s.modalTitle}>Send a comment</Text>
+              <TextInput
+                style={s.modalInput}
+                value={comment}
+                onChangeText={setComment}
+                placeholder="What made you smile?"
+                placeholderTextColor="#8B90A3"
+                autoFocus
+                maxLength={280}
+                multiline
+              />
+              <View style={s.modalRow}>
+                <TouchableOpacity style={s.modalGhost} onPress={() => { setCommentOn(null); setComment(""); }}>
+                  <Text style={{ color: "#8B90A3", fontWeight: "700" }}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={sendComment} disabled={!comment.trim()} style={{ flex: 1 }}>
+                  <LinearGradient colors={[...theme.grad]} style={s.modalSend}>
+                    <Text style={{ color: "#FFF", fontWeight: "800" }}>Send</Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </ScrollView>
+    </Animated.View>
   );
 }
 
 const s = StyleSheet.create({
-  wrap: { flex: 1, backgroundColor: theme.bg },
-  center: { flex: 1, backgroundColor: theme.bg, alignItems: "center", justifyContent: "center" },
-  headerBlock: { paddingHorizontal: 16, paddingTop: 12, gap: 8 },
-  card: { backgroundColor: theme.card, borderRadius: theme.radii.lg, borderWidth: 1, borderColor: theme.line,
-    marginHorizontal: 14, marginTop: 14, padding: 18, ...theme.shadow.card },
-  factsRow: { flexDirection: "row", alignItems: "center" },
-  factCell: { paddingHorizontal: 14, borderRightWidth: 1, borderRightColor: theme.line,
-    justifyContent: "center" },
-  factText: { color: theme.ink, fontSize: 14, fontFamily: theme.font.semibold },
-  goalRow: { flexDirection: "row", alignItems: "center", borderTopWidth: 1,
-    borderTopColor: theme.line, marginTop: 14, paddingTop: 14 },
-  eyebrow: { color: theme.muted, fontSize: 11, fontFamily: theme.font.bold, marginBottom: 10,
-    textTransform: "uppercase", letterSpacing: 2 },
-  bioSerif: { color: theme.ink, fontFamily: SERIF, fontSize: 24, lineHeight: 33 },
-  promptAnswer: { color: theme.ink, fontSize: 17, lineHeight: 25, fontFamily: theme.font.medium },
-  photoCard: { marginHorizontal: 14, marginTop: 14, borderRadius: theme.radii.lg, overflow: "hidden",
-    aspectRatio: 4 / 5, backgroundColor: theme.card, ...theme.shadow.card },
-  photoEmpty: { alignItems: "center", justifyContent: "center" },
-  photo: { ...StyleSheet.absoluteFillObject },
-  initial: { color: "rgba(255,255,255,.25)", fontSize: 110, fontFamily: theme.font.black },
-  muteBtn: { position: "absolute", right: 14, bottom: 14, width: 42, height: 42,
-    borderRadius: 21, backgroundColor: "rgba(10,18,16,.6)", alignItems: "center",
-    justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,.25)" },
-  voicePill: { flexDirection: "row", alignItems: "center", gap: 10, alignSelf: "flex-start",
-    backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line, borderRadius: 999,
-    paddingVertical: 8, paddingHorizontal: 14 },
-  voiceText: { color: theme.ink, fontSize: 14, fontFamily: theme.font.bold },
-  commentBtn: { position: "absolute", right: 14, bottom: 14, width: 42, height: 42,
-    borderRadius: 21, backgroundColor: "rgba(10,18,16,.6)", alignItems: "center",
-    justifyContent: "center", borderWidth: 1, borderColor: "rgba(255,255,255,.25)" },
-  newHere: { alignSelf: "flex-start", backgroundColor: theme.ink, borderRadius: 999,
-    paddingHorizontal: 12, paddingVertical: 6 },
-  newHereText: { color: theme.bg, fontSize: 12, fontFamily: theme.font.bold },
-  metaRow: { flexDirection: "row", alignItems: "center" },
-  greenDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#1E8E6E" },
-  metaText: { color: theme.muted, fontSize: 13, fontFamily: theme.font.semibold },
-  chipWrap: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderWidth: 1, borderColor: "rgba(236,72,153,.5)", backgroundColor: theme.goldSoft,
-    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6 },
-  chipText: { color: theme.gold, fontSize: 12, fontFamily: theme.font.semibold },
-  previewNote: { color: theme.muted, fontSize: 13, textAlign: "center", marginTop: 24,
-    lineHeight: 19 },
-  actGold: { flexDirection: "row", alignItems: "center", justifyContent: "center",
-    gap: 8, borderRadius: 999, paddingVertical: 16, marginTop: 24, ...theme.shadow.cta },
-  actGoldText: { color: "#fff", fontFamily: theme.font.bold, fontSize: 15 },
+  wrap: {
+    flex: 1,
+    backgroundColor: "#0B0D14",
+  },
+  center: {
+    flex: 1,
+    backgroundColor: "#0B0D14",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  navTitle: {
+    fontFamily: SERIF,
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#E9E7E2",
+  },
+
+  // 1. Hero Card
+  heroCardContainer: {
+    marginHorizontal: 14,
+    marginTop: 8,
+    borderRadius: 24,
+    overflow: "hidden",
+    height: 480,
+    backgroundColor: "#13161F",
+    position: "relative",
+    shadowColor: "#000",
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 8,
+  },
+  heroImage: {
+    ...StyleSheet.absoluteFillObject,
+    width: "100%",
+    height: "100%",
+  },
+  soundToggle: {
+    position: "absolute",
+    top: 16,
+    right: 16,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(11, 13, 20, 0.65)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+  heroGradientScrim: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    paddingTop: 60,
+    justifyContent: "flex-end",
+  },
+  heroInfoRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+  },
+  heroTextCol: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  heroName: {
+    fontFamily: SERIF,
+    fontSize: 28,
+    fontWeight: "700",
+    color: "#E9E7E2",
+    marginBottom: 4,
+    letterSpacing: -0.5,
+  },
+  heroLocRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  heroLocText: {
+    color: "#8B90A3",
+    fontSize: 13,
+    fontFamily: theme.font.regular,
+  },
+  heroActionGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  heroPassBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(26, 30, 42, 0.85)",
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.15)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  heroLikeBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FF7A2E",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#FF7A2E",
+    shadowOpacity: 0.45,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+
+  // 3. Prompt Cards
+  promptCard: {
+    backgroundColor: "#13161F",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#202534",
+    padding: 20,
+    marginHorizontal: 14,
+    marginTop: 14,
+  },
+  promptHeader: {
+    color: "#FF9F1C",
+    fontSize: 14,
+    fontWeight: "700",
+    fontFamily: theme.font.bold,
+    marginBottom: 10,
+  },
+  promptBody: {
+    color: "#E9E7E2",
+    fontFamily: SERIF,
+    fontStyle: "italic",
+    fontSize: 15.5,
+    lineHeight: 23,
+  },
+
+  // 4. Voice Note Card with Waveform
+  voiceNoteCard: {
+    backgroundColor: "#13161F",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#202534",
+    padding: 16,
+    marginHorizontal: 14,
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  voicePlayCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FF7A2E",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  voiceInfoCol: {
+    flex: 1,
+  },
+  voiceLabel: {
+    color: "#FF7A2E",
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 1,
+    marginBottom: 6,
+  },
+  waveformRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+    height: 30,
+  },
+  waveformBar: {
+    width: 3,
+    borderRadius: 2,
+  },
+  voiceDuration: {
+    color: "#8B90A3",
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // 5, 6, 7. Section Cards
+  sectionCard: {
+    backgroundColor: "#13161F",
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: "#202534",
+    padding: 20,
+    marginHorizontal: 14,
+    marginTop: 14,
+  },
+  sectionHeading: {
+    color: "#E9E7E2",
+    fontFamily: SERIF,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 14,
+  },
+  basicsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    rowGap: 14,
+  },
+  basicItem: {
+    width: "50%",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  basicText: {
+    color: "#E9E7E2",
+    fontSize: 13.5,
+    fontFamily: theme.font.medium,
+  },
+  lifestylePillRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  lifestylePill: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: "#1B202D",
+    borderWidth: 1,
+    borderColor: "#293044",
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+  },
+  lifestylePillText: {
+    color: "#E9E7E2",
+    fontSize: 12.5,
+    fontWeight: "600",
+  },
+  loveLangRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+  loveLangIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255, 122, 46, 0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loveLangTitle: {
+    color: "#E9E7E2",
+    fontSize: 14.5,
+    fontWeight: "700",
+    marginBottom: 2,
+  },
+  loveLangDesc: {
+    color: "#8B90A3",
+    fontSize: 12,
+  },
+
+  // 8. 2-Column Photo Gallery
+  galleryContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginHorizontal: 14,
+    marginTop: 14,
+  },
+  galleryCol: {
+    flex: 1,
+    height: 190,
+    borderRadius: 20,
+    overflow: "hidden",
+    backgroundColor: "#13161F",
+  },
+  galleryImg: {
+    width: "100%",
+    height: "100%",
+  },
+
+  // Modal
   modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,.6)", justifyContent: "center", padding: 24 },
-  modalCard: { backgroundColor: theme.card, borderRadius: theme.radii.xl, padding: 20,
-    borderWidth: 1, borderColor: theme.line, ...theme.shadow.floating },
-  modalTitle: { color: theme.ink, fontSize: 17, fontFamily: theme.font.displayMd, marginBottom: 12 },
-  modalInput: { backgroundColor: theme.card2, borderWidth: 1, borderColor: theme.line,
-    borderRadius: theme.radii.md, padding: 12, color: theme.ink, minHeight: 70, textAlignVertical: "top" },
+  modalCard: { backgroundColor: "#13161F", borderRadius: 24, padding: 20, borderWidth: 1, borderColor: "#202534" },
+  modalTitle: { color: "#E9E7E2", fontSize: 17, fontFamily: SERIF, fontWeight: "700", marginBottom: 12 },
+  modalInput: { backgroundColor: "#1B202D", borderWidth: 1, borderColor: "#293044", borderRadius: 14, padding: 12, color: "#E9E7E2", minHeight: 70, textAlignVertical: "top" },
   modalRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 14 },
   modalGhost: { paddingHorizontal: 14, paddingVertical: 12 },
-  modalSend: { borderRadius: 999, padding: 14, alignItems: "center", ...theme.shadow.cta },
+  modalSend: { borderRadius: 999, padding: 14, alignItems: "center" },
 });

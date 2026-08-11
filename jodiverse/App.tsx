@@ -62,13 +62,13 @@ function applyGlobalFont() {
 }
 
 const ICONS: Record<string, [string, string]> = {
-  Discover: ["albums", "albums-outline"],
-  Likes: ["search", "search-outline"],
+  Discover: ["compass", "compass-outline"],
+  Likes: ["heart", "heart-outline"],
   Chat: ["chatbubbles", "chatbubbles-outline"],
   Profile: ["person", "person-outline"],
 };
 
-// Standard 4-tab layout: Discover (the curated deck) is home.
+// Stitch luxury tab bar layout
 function Tabs() {
   const insets = useSafeAreaInsets();
   return (
@@ -78,26 +78,40 @@ function Tabs() {
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: theme.gold,
-        tabBarInactiveTintColor: theme.muted,
-        tabBarShowLabel: false,
-        // Grow the bar by the device's bottom inset (gesture pill / nav bar)
-        // so icons never sit under the system menu.
+        tabBarInactiveTintColor: "#686D80",
+        tabBarShowLabel: true,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontFamily: theme.font.semibold,
+          marginTop: -4,
+          marginBottom: 4,
+        },
         tabBarStyle: {
-          backgroundColor: theme.card, borderTopColor: theme.line,
-          height: 60 + insets.bottom, paddingTop: 8, paddingBottom: insets.bottom,
-          shadowColor: "#000", shadowOpacity: 0.3, shadowRadius: 16,
-          shadowOffset: { width: 0, height: -6 }, elevation: 12,
+          backgroundColor: "#0E1119",
+          borderTopColor: "#1C212E",
+          borderTopWidth: 1,
+          height: 62 + insets.bottom,
+          paddingTop: 6,
+          paddingBottom: insets.bottom,
+          shadowColor: "#000",
+          shadowOpacity: 0.4,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: -6 },
+          elevation: 16,
         },
         tabBarIcon: ({ color, focused }) => (
-          <Ionicons name={(focused ? ICONS[route.name][0] : ICONS[route.name][1]) as any}
-            size={25} color={color} />
+          <Ionicons
+            name={(focused ? ICONS[route.name]?.[0] || "albums" : ICONS[route.name]?.[1] || "albums-outline") as any}
+            size={22}
+            color={color}
+          />
         ),
       })}
     >
-      <Tab.Screen name="Discover" component={DiscoverScreen} />
-      <Tab.Screen name="Likes" component={LikesScreen} />
-      <Tab.Screen name="Chat" component={ChatsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen name="Discover" component={DiscoverScreen} options={{ tabBarLabel: "Discover" }} />
+      <Tab.Screen name="Likes" component={LikesScreen} options={{ tabBarLabel: "Jodi" }} />
+      <Tab.Screen name="Chat" component={ChatsScreen} options={{ tabBarLabel: "Chat" }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: "VIP" }} />
     </Tab.Navigator>
   );
 }

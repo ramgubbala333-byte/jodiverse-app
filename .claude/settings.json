@@ -25,7 +25,33 @@
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/home_talk_refined/**)",
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/your_profile_refined/**)",
       "Read(//c/Users/ramgu/Downloads/stitch_echo_voice_dating/stitch_echo_voice_dating/chats_conversation/**)",
-      "Bash(echo \"=== exit $? ===\")"
+      "Bash(echo \"=== exit $? ===\")",
+      "Bash(git show *)",
+      "Read(//tmp/**)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Read(//c/Users/ramgu/.claude/projects/c--Users-ramgu-OneDrive-Desktop-jodiverse-app/memory/**)",
+      "Bash(cd \"/c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery\" 2>&1 && echo \"=== top level ===\" && ls -la && echo \"\" && echo \"=== full tree \\(files\\) ===\" && find . -type f)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery/dosti_connect/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery/dosti_connect_immersive_experience/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery/shader/**)",
+      "Read(//c/Users/ramgu/Downloads/stitch_dosti_connect_curated_discovery/stitch_dosti_connect_curated_discovery/three.js/**)",
+      "Read(//c/Users/ramgu/Downloads/**)",
+      "Bash(npm install *)",
+      "Bash(cd \"c:/Users/ramgu/OneDrive/Desktop/jodiverse-app/jodiverse/src/screens\" && grep -n \"type Entry\\\\|type Stats\\\\|type Pack\" -A4 TransactionsScreen.tsx ReferralScreen.tsx; echo \"=== WhyMatchedCard Reason ===\"; sed -n '1,30p' ../components/WhyMatchedCard.tsx)",
+      "Read(//c/Users/ramgu/OneDrive/Desktop/components/**)",
+      "Bash(git commit -q -m ' *)",
+      "Bash(powershell -Command \"Get-CimInstance Win32_Process -Filter \\\\\"CommandLine LIKE '%expo start%'\\\\\" | Select-Object ProcessId, CommandLine\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -State Listen -LocalPort 8081,8082,8083 -ErrorAction SilentlyContinue | Select-Object LocalPort, OwningProcess\")",
+      "Bash(powershell -Command \"Stop-Process -Id 24944,34624 -Force -ErrorAction SilentlyContinue; Start-Sleep -Seconds 1; Get-NetTCPConnection -State Listen -LocalPort 8081,8083 -ErrorAction SilentlyContinue\")",
+      "Bash(powershell -Command \"Get-NetTCPConnection -State Listen -LocalPort 8081,8083 -ErrorAction SilentlyContinue | Select-Object LocalPort, OwningProcess\")",
+      "WebFetch(domain:healthyframework.com)",
+      "Bash(grep -n \"const \\\\[lifestyle\\\\|const \\\\[faith\\\\|const \\\\[diet\\\\|const \\\\[drinking\\\\|const \\\\[heightCm\\\\|lifestyle,$\\\\|lifestyle,\" src/screens/OnboardingScreen.tsx)"
+    ],
+    "additionalDirectories": [
+      "c:\\Users\\ramgu\\.claude\\projects\\c--Users-ramgu-OneDrive-Desktop-jodiverse-app\\memory"
     ]
   }
 }

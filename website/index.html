@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DostiConnect · High-Intent Matchmaking for South Asian Singles</title>
+  <meta name="description" content="The modern dating & matchmaking app for South Asian singles across India, US, UK, Canada & Australia. Curated deck, prompt likes, direct requests, and cultural compatibility." />
+  <meta name="keywords" content="DostiConnect, South Asian dating, Desi dating app, Indian matchmaking, Dil Mil alternative, Hinge for Desis, NRI dating, matrimony, verified singles" />
+  
+  <!-- Open Graph / Social Meta -->
+  <meta property="og:title" content="DostiConnect · Serious About Finding Your Jodi." />
+  <meta property="og:description" content="Curated deck, verified profiles, prompt comments, and intelligent cultural matching for Desi & NRI singles worldwide." />
+  <meta property="og:type" content="website" />
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Unbounded:wght@600;700;800;900&display=swap" rel="stylesheet" />
+  
+  <!-- Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <!-- Ambient Glowing Aurora Orbs -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+  <div class="ambient-glow glow-3"></div>
+
+  <!-- Announcement Bar -->
+  <div class="top-banner">
+    <div class="container banner-inner">
+      <span class="banner-badge">✨ GLOBAL COMMUNITY</span>
+      <span class="banner-text">Connecting verified South Asian & NRI singles across <strong>India, US, UK, Canada & Australia</strong></span>
+      <a href="#download" class="banner-link">Get DostiConnect <i class="ph ph-arrow-right"></i></a>
+    </div>
+  </div>
+
+  <!-- Navigation Bar -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="#" class="brand-logo">
+        <div class="logo-mark">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="16" cy="20" r="11" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="24" cy="20" r="11" stroke="url(#goldGrad)" stroke-width="3" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="goldGrad" x1="5" y1="9" x2="35" y2="31" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#FF9F1C"/>
+                <stop offset="0.5" stop-color="#FF5E3A"/>
+                <stop offset="1" stop-color="#FF2D55"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div class="logo-text">
+          <span class="brand-name">DostiConnect</span>
+          <span class="brand-sub">Serious About Finding Your Jodi</span>
+        </div>
+      </a>
+
+      <nav class="nav-menu" id="navMenu">
+        <a href="#how-it-works" class="nav-link">How It Works</a>
+        <a href="#features" class="nav-link">Features</a>
+        <a href="#app-preview" class="nav-link">App Experience</a>
+        <a href="#compatibility" class="nav-link">Compatibility</a>
+        <a href="#plans" class="nav-link">Plans</a>
+        <a href="#stories" class="nav-link">Stories</a>
+        <a href="#faq" class="nav-link">FAQ</a>
+      </nav>
+
+      <div class="nav-actions">
+        <button class="btn btn-outline btn-sm" onclick="openQrModal()">
+          <i class="ph ph-qr-code"></i> Scan to Test
+        </button>
+        <a href="#download" class="btn btn-primary btn-sm">
+          <span>Get the App</span>
+        </a>
+        <button class="mobile-toggle" id="mobileToggle" aria-label="Toggle Menu">
+          <i class="ph ph-list"></i>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Section -->
+  <section class="hero-section" id="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <div class="hero-pill">
+          <span class="pill-dot"></span>
+          <span>Designed for Intentional South Asian Dating</span>
+        </div>
+
+        <h1 class="hero-title">
+          Connect on What Matters.<br />
+          <span class="gradient-text">Find Your Jodi.</span>
+        </h1>
+
+        <p class="hero-desc">
+          The intentional dating app for Desi and NRI singles. Browse curated profiles with rich prompts, voice intros, cultural alignment, and send direct notes to spark meaningful conversations.
+        </p>
+
+        <!-- CTA Buttons -->
+        <div class="hero-cta-group">
+          <button class="store-badge-btn" onclick="openQrModal('ios')">
+            <i class="ph-bold ph-apple-logo"></i>
+            <div class="badge-text">
+              <span class="badge-sub">Download on the</span>
+              <span class="badge-main">App Store</span>
+            </div>
+          </button>
+
+          <button class="store-badge-btn" onclick="openQrModal('android')">
+            <i class="ph-bold ph-google-play-logo"></i>
+            <div class="badge-text">
+              <span class="badge-sub">Get it on</span>
+              <span class="badge-main">Google Play</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Social Proof Stats -->
+        <div class="hero-trust">
+          <div class="trust-avatars">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="User avatar" class="avatar" />
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="User avatar" class="avatar" />
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80" alt="User avatar" class="avatar" />
+            <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&auto=format&fit=crop&q=80" alt="User avatar" class="avatar" />
+            <div class="avatar-count">+100k</div>
+          </div>
+          <div class="trust-info">
+            <div class="stars">
+              <i class="ph-fill ph-star"></i>
+              <i class="ph-fill ph-star"></i>
+              <i class="ph-fill ph-star"></i>
+              <i class="ph-fill ph-star"></i>
+              <i class="ph-fill ph-star"></i>
+              <span class="rating-num">4.9 / 5</span>
+            </div>
+            <p class="trust-label">Over 100,000+ high-intent matches made</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Phone Showcase (Interactive Mockup) -->
+      <div class="hero-device-wrapper">
+        <!-- Floating Glass Cards -->
+        <div class="floating-card float-card-left">
+          <div class="float-icon-gold"><i class="ph-bold ph-chats-circle"></i></div>
+          <div class="float-card-content">
+            <div class="float-card-title">Like with Comment</div>
+            <div class="float-card-sub">Becomes chat icebreaker</div>
+          </div>
+        </div>
+
+        <div class="floating-card float-card-right">
+          <div class="float-icon-emerald"><i class="ph-bold ph-shield-check"></i></div>
+          <div class="float-card-content">
+            <div class="float-card-title">Selfie-Verified ✓</div>
+            <div class="float-card-sub">100% Genuine Profiles</div>
+          </div>
+        </div>
+
+        <div class="floating-card float-card-bottom">
+          <div class="float-icon-gold"><i class="ph-bold ph-sparkle"></i></div>
+          <div class="float-card-content">
+            <div class="float-card-title">Cultural Alignment</div>
+            <div class="float-card-sub">Language, Faith & Values</div>
+          </div>
+        </div>
+
+        <!-- The 3D Mockup Frame -->
+        <div class="device-frame">
+          <div class="device-notch"></div>
+          <div class="device-screen">
+            <!-- Screen Content: Curated Deck Preview -->
+            <div class="deck-card-preview" style="height: 100%;">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80" alt="Ananya" class="card-img" />
+              <div class="card-gradient-overlay">
+                <span class="verified-badge"><i class="ph-fill ph-check-circle"></i> Verified Profile</span>
+                <h3 style="font-size: 22px; margin-top: 4px;">Ananya, 27</h3>
+                <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 8px;">
+                  <i class="ph ph-briefcase"></i> Product Designer &bull; 📍 Bengaluru (~5 km)
+                </p>
+                <div class="pill-row" style="justify-content: flex-start; margin-bottom: 10px;">
+                  <span>💍 Life partner</span>
+                  <span>🕉️ Hindu</span>
+                  <span>🥗 Vegetarian</span>
+                  <span>Telugu & English</span>
+                </div>
+                <div class="voice-intro-player" style="margin-bottom: 0;">
+                  <i class="ph-fill ph-play-circle"></i>
+                  <span>Voice Intro (0:15)</span>
+                  <div class="mini-waveform">||||||||||||</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deck Action Bar -->
+            <div class="deck-buttons" style="margin-top: 10px;">
+              <button class="deck-action pass" title="Pass"><i class="ph-bold ph-x"></i></button>
+              <button class="deck-action star" title="Super Like"><i class="ph-fill ph-star"></i></button>
+              <button class="deck-action heart" title="Like with Comment"><i class="ph-fill ph-heart"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Global Cities Marquee -->
+  <div class="marquee-section">
+    <div class="marquee-label">CONNECTING SINGLES ACROSS:</div>
+    <div class="marquee-track">
+      <div class="marquee-content">
+        <span>📍 MUMBAI</span> <span class="sep">•</span>
+        <span>📍 NEW YORK</span> <span class="sep">•</span>
+        <span>📍 LONDON</span> <span class="sep">•</span>
+        <span>📍 TORONTO</span> <span class="sep">•</span>
+        <span>📍 BENGALURU</span> <span class="sep">•</span>
+        <span>📍 SAN FRANCISCO / BAY AREA</span> <span class="sep">•</span>
+        <span>📍 DELHI NCR</span> <span class="sep">•</span>
+        <span>📍 SYDNEY</span> <span class="sep">•</span>
+        <span>📍 CHICAGO</span> <span class="sep">•</span>
+        <span>📍 HYDERABAD</span> <span class="sep">•</span>
+        <span>📍 VANCOUVER</span> <span class="sep">•</span>
+        <span>📍 DALLAS</span> <span class="sep">•</span>
+      </div>
+      <div class="marquee-content" aria-hidden="true">
+        <span>📍 MUMBAI</span> <span class="sep">•</span>
+        <span>📍 NEW YORK</span> <span class="sep">•</span>
+        <span>📍 LONDON</span> <span class="sep">•</span>
+        <span>📍 TORONTO</span> <span class="sep">•</span>
+        <span>📍 BENGALURU</span> <span class="sep">•</span>
+        <span>📍 SAN FRANCISCO / BAY AREA</span> <span class="sep">•</span>
+        <span>📍 DELHI NCR</span> <span class="sep">•</span>
+        <span>📍 SYDNEY</span> <span class="sep">•</span>
+        <span>📍 CHICAGO</span> <span class="sep">•</span>
+        <span>📍 HYDERABAD</span> <span class="sep">•</span>
+        <span>📍 VANCOUVER</span> <span class="sep">•</span>
+        <span>📍 DALLAS</span> <span class="sep">•</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Metrics / Trust Bar -->
+  <section class="stats-section">
+    <div class="container stats-grid">
+      <div class="stat-card">
+        <div class="stat-num">100%</div>
+        <div class="stat-title">Free Swiping & Matching</div>
+        <div class="stat-desc">Matching, liking, and chatting are free forever.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-num">1/wk</div>
+        <div class="stat-title">Free "Likes You" Reveal</div>
+        <div class="stat-desc">See who liked you for free every week.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-num">100%</div>
+        <div class="stat-title">Selfie-Verified Profiles</div>
+        <div class="stat-desc">On-device verification. Zero catfish & bots.</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-num">50+</div>
+        <div class="stat-title">Global NRI Cities</div>
+        <div class="stat-desc">India, North America, UK, Australia & Europe.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section -->
+  <section class="section how-it-works-section" id="how-it-works">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">THE DOSTICONNECT EXPERIENCE</span>
+        <h2 class="section-title">How <span class="gradient-text">DostiConnect</span> Works</h2>
+        <p class="section-subtitle">Thoughtful matching inspired by what truly creates lasting relationships.</p>
+      </div>
+
+      <div class="steps-grid">
+        <!-- Step 1 -->
+        <div class="step-card">
+          <div class="step-num">01</div>
+          <div class="step-icon">
+            <i class="ph-bold ph-identification-card"></i>
+          </div>
+          <h3 class="step-title">Build Your Smart Profile</h3>
+          <p class="step-desc">
+            Express yourself with 3-6 photos, short intro clips, voice notes, prompt answers, relationship intent, languages, and our 7-point compatibility questionnaire.
+          </p>
+          <ul class="step-features">
+            <li><i class="ph-fill ph-check-circle"></i> On-device selfie verification</li>
+            <li><i class="ph-fill ph-check-circle"></i> Cultural, dietary & faith tags</li>
+          </ul>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="step-card featured-step">
+          <div class="step-badge">HIGH ENGAGEMENT</div>
+          <div class="step-num">02</div>
+          <div class="step-icon">
+            <i class="ph-bold ph-chat-centered-text"></i>
+          </div>
+          <h3 class="step-title">Like a Specific Item or Send a Request</h3>
+          <p class="step-desc">
+            Don't just swipe on a photo. Like a specific prompt answer, passion, or photo with an attached comment. Or send a direct "Request" note to stand out immediately.
+          </p>
+          <ul class="step-features">
+            <li><i class="ph-fill ph-check-circle"></i> Comment becomes first chat message</li>
+            <li><i class="ph-fill ph-check-circle"></i> Direct Requests reach their inbox</li>
+          </ul>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="step-card">
+          <div class="step-num">03</div>
+          <div class="step-icon">
+            <i class="ph-bold ph-heart"></i>
+          </div>
+          <h3 class="step-title">Match & Chat in Real Time</h3>
+          <p class="step-desc">
+            When you match, celebrate the moment and chat seamlessly with rich messaging, voice clips, photos, and anti-ghosting icebreakers.
+          </p>
+          <ul class="step-features">
+            <li><i class="ph-fill ph-check-circle"></i> Unlimited free messaging</li>
+            <li><i class="ph-fill ph-check-circle"></i> Safe reporting & unmatch controls</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Interactive App Preview Showcase -->
+  <section class="section app-preview-section" id="app-preview">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">INSIDE THE APP</span>
+        <h2 class="section-title">Designed for <span class="gradient-text">Depth & Ease</span></h2>
+        <p class="section-subtitle">A walkthrough of the core mobile experience in DostiConnect.</p>
+      </div>
+
+      <!-- Preview Selector Tabs -->
+      <div class="preview-tabs">
+        <button class="tab-btn active" onclick="switchPreview('deck')">
+          <i class="ph ph-cards"></i> 1. Curated Deck
+        </button>
+        <button class="tab-btn" onclick="switchPreview('profile')">
+          <i class="ph ph-user"></i> 2. Deep Profile View
+        </button>
+        <button class="tab-btn" onclick="switchPreview('likes')">
+          <i class="ph ph-heart-straight"></i> 3. Likes You (Fair Free)
+        </button>
+        <button class="tab-btn" onclick="switchPreview('requests')">
+          <i class="ph ph-envelope-simple"></i> 4. Direct Requests
+        </button>
+      </div>
+
+      <!-- Preview Display Grid -->
+      <div class="preview-showcase">
+        <div class="preview-desc-col">
+          <!-- 1. Deck Info -->
+          <div class="preview-info active" id="info-deck">
+            <div class="info-tag">CURATED MATCH DECK</div>
+            <h3 class="info-title">One Full Profile at a Time</h3>
+            <p class="info-body">
+              Browse verified singles with full prompt cards, cultural facts, and 15-second audio snippets. Like a specific prompt or photo, and your comment becomes the match's opening icebreaker.
+            </p>
+            <div class="info-bullets">
+              <div class="bullet-item"><i class="ph-fill ph-check-circle"></i> AI Semantic Embeddings (pgvector)</div>
+              <div class="bullet-item"><i class="ph-fill ph-check-circle"></i> Location privacy via ~1km geohash cells</div>
+              <div class="bullet-item"><i class="ph-fill ph-check-circle"></i> Live reply rate & activity indicators</div>
+            </div>
+          </div>
+
+          <!-- 2. Profile Info -->
+          <div class="info-info" id="info-profile" style="display:none;">
+            <div class="info-tag">SMART PROFILE VIEW</div>
+            <h3 class="info-title">Cultural Traits, Values & Prompts</h3>
+            <p class="info-body">
+              Express who you truly are with verified selfie checks, prompt questions, love languages, diet/faith badges, and optional video intros with on-device EXIF stripping.
+            </p>
+            <div class="info-bullets">
+              <div class="bullet-item"><i class="ph-fill ph-microphone"></i> 15-30s voice intro clips</div>
+              <div class="bullet-item"><i class="ph-fill ph-seal-check"></i> Verified blue badge authentication</div>
+              <div class="bullet-item"><i class="ph-fill ph-chat-circle"></i> Hinge-style prompt cards</div>
+            </div>
+          </div>
+
+          <!-- 3. Likes You Info -->
+          <div class="info-info" id="info-likes" style="display:none;">
+            <div class="info-tag">FAIR ADMIRERS INBOX</div>
+            <h3 class="info-title">See Who Likes You — 1 Free Every Week</h3>
+            <p class="info-body">
+              Unlike other apps that hard-paywall incoming likes behind expensive subscriptions, DostiConnect gives every member one full reveal per week for free. Plus members unlock everyone.
+            </p>
+            <div class="info-bullets">
+              <div class="bullet-item"><i class="ph-fill ph-gift"></i> 1 Free reveal every 7 days</div>
+              <div class="bullet-item"><i class="ph-fill ph-crown"></i> Plus upgrade to see all admirers instantly</div>
+            </div>
+          </div>
+
+          <!-- 4. Requests Info -->
+          <div class="info-info" id="info-requests" style="display:none;">
+            <div class="info-tag">DIRECT REQUESTS</div>
+            <h3 class="info-title">Reach Out with a Personal Note</h3>
+            <p class="info-body">
+              Stand out from the crowd by sending a direct Request note before matching. Accepting connects you instantly; declining is 100% private and silent.
+            </p>
+            <div class="info-bullets">
+              <div class="bullet-item"><i class="ph-fill ph-envelope"></i> Send direct notes to high-intent matches</div>
+              <div class="bullet-item"><i class="ph-fill ph-lock"></i> Silent, private decline protection</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone Visual Mockup -->
+        <div class="preview-mockup-col">
+          <div class="mockup-frame">
+            <div class="mockup-notch"></div>
+            
+            <!-- Screen 1: Deck -->
+            <div class="screen-view active" id="view-deck">
+              <div class="deck-card-preview">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80" alt="Pooja" class="card-img" />
+                <div class="card-gradient-overlay">
+                  <span class="verified-badge"><i class="ph-fill ph-check-circle"></i> Verified</span>
+                  <h3>Pooja, 26</h3>
+                  <p>📍 Mumbai &bull; Product Manager</p>
+                  <div class="pill-row">
+                    <span>🕉️ Hindu</span>
+                    <span>🥗 Vegetarian</span>
+                    <span>🏸 Badminton</span>
+                  </div>
+                </div>
+              </div>
+              <div class="deck-buttons">
+                <button class="deck-action pass"><i class="ph-bold ph-x"></i></button>
+                <button class="deck-action star"><i class="ph-fill ph-star"></i></button>
+                <button class="deck-action heart"><i class="ph-fill ph-heart"></i></button>
+              </div>
+            </div>
+
+            <!-- Screen 2: Profile (Stitch Luxury Layout) -->
+            <div class="screen-view" id="view-profile" style="display:none; padding: 14px 8px 10px; overflow-y: auto;">
+              <div style="background: #13161F; border-radius: 18px; overflow: hidden; position: relative; height: 230px; margin-bottom: 10px;">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Ananya" />
+                <div style="position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 14px; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;"><i class="ph ph-speaker-high" style="font-size: 13px; color: #fff;"></i></div>
+                <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 12px 10px; background: linear-gradient(180deg, transparent 0%, rgba(11, 13, 20, 0.95) 90%); display: flex; align-items: flex-end; justify-content: space-between;">
+                  <div>
+                    <h3 style="font-family: var(--font-display); font-size: 17px; margin-bottom: 2px;">Ananya, 28</h3>
+                    <p style="font-size: 10px; color: var(--muted);">📍 Mumbai, IN • 4 miles away</p>
+                  </div>
+                  <div style="display: flex; gap: 6px;">
+                    <div style="width: 32px; height: 32px; border-radius: 16px; background: #1B202D; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 14px;"><i class="ph-bold ph-x"></i></div>
+                    <div style="width: 32px; height: 32px; border-radius: 16px; background: #FF7A2E; display: flex; align-items: center; justify-content: center; color: #0B0D14; font-size: 16px;"><i class="ph-fill ph-heart"></i></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Why You Matched Gauge -->
+              <div style="background: #13161F; border: 1px solid #202534; border-radius: 14px; padding: 10px; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: #E9E7E2; margin-bottom: 6px;"><i class="ph-bold ph-sparkle" style="color: var(--gold);"></i> Why You Matched</div>
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                  <div style="width: 36px; height: 36px; border-radius: 18px; border: 2.5px solid var(--gold); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0;">94%</div>
+                  <div style="font-size: 9.5px; color: var(--muted); line-height: 1.3;">Deep Connect on Potential &bull; Strong alignment in conversational rhythms.</div>
+                </div>
+                <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                  <span style="background: #1B202D; font-size: 8px; padding: 2px 6px; border-radius: 999px; color: var(--gold);">🔥 Indie music</span>
+                  <span style="background: #1B202D; font-size: 8px; padding: 2px 6px; border-radius: 999px; color: var(--gold);">⏰ Early risers</span>
+                </div>
+              </div>
+
+              <!-- Prompts -->
+              <div style="background: #13161F; border: 1px solid #202534; border-radius: 12px; padding: 10px; margin-bottom: 8px;">
+                <div style="font-size: 10px; font-weight: 700; color: #FF9F1C; margin-bottom: 4px;">My simple pleasures...</div>
+                <div style="font-size: 10.5px; font-style: italic; color: #E9E7E2; line-height: 1.4;">"A quiet Sunday morning with a strong filter coffee, jazz on vinyl."</div>
+              </div>
+
+              <!-- Voice Note Bar -->
+              <div style="background: #13161F; border: 1px solid #202534; border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; gap: 8px;">
+                <div style="width: 24px; height: 24px; border-radius: 12px; background: var(--gold); display: flex; align-items: center; justify-content: center; color: #0B0D14; font-size: 11px;"><i class="ph-fill ph-play"></i></div>
+                <div style="flex: 1;"><div style="font-size: 8.5px; font-weight: 800; color: var(--gold);">VOICE NOTE</div><div style="font-size: 8px; color: var(--muted); letter-spacing: 1px;">||||||||||||||||</div></div>
+                <div style="font-size: 9px; color: var(--muted);">0:15</div>
+              </div>
+            </div>
+
+            <!-- Screen 3: Likes You -->
+            <div class="screen-view" id="view-likes" style="display:none;">
+              <div class="screen-header">
+                <span class="screen-title" style="font-size: 14px;">12 people like you</span>
+              </div>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1;">
+                <div style="background: #1A1E2A; border-radius: 12px; position: relative; overflow: hidden;">
+                  <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=300&auto=format&fit=crop&q=80" style="width: 100%; height: 100%; object-fit: cover;" alt="Match" />
+                  <div style="position: absolute; bottom: 6px; left: 6px; font-size: 11px; font-weight: 700; color: #fff;">Meera, 25</div>
+                  <span style="position: absolute; top: 6px; left: 6px; background: var(--gold); font-size: 8px; font-weight: 800; padding: 2px 4px; border-radius: 4px;">FREE</span>
+                </div>
+                <div style="background: #1A1E2A; border-radius: 12px; display: flex; align-items: center; justify-content: center; position: relative;">
+                  <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center;"><i class="ph-bold ph-lock"></i></div>
+                </div>
+              </div>
+              <button class="btn btn-primary btn-sm full-w" style="margin-top: 10px;">Upgrade to Plus</button>
+            </div>
+
+            <!-- Screen 4: Requests -->
+            <div class="screen-view" id="view-requests" style="display:none;">
+              <div class="screen-header">
+                <span class="screen-title" style="font-size: 14px;">Direct Requests</span>
+              </div>
+              <div style="background: #1A1E2A; border: 1px solid var(--line); border-radius: 14px; padding: 12px; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                  <div style="width: 30px; height: 30px; border-radius: 50%; background: var(--brand-gradient); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">K</div>
+                  <div>
+                    <div style="font-size: 12px; font-weight: 700;">Kabir, 28</div>
+                    <div style="font-size: 10px; color: var(--muted);">London, UK</div>
+                  </div>
+                </div>
+                <p style="font-size: 11px; color: var(--ink-secondary); font-style: italic; margin-bottom: 10px;">"Loved your note on Big Sur trips! I'm planning one next month."</p>
+                <div style="display: flex; gap: 6px;">
+                  <button style="flex: 1; padding: 6px; border-radius: 999px; background: transparent; border: 1px solid var(--line); color: var(--muted); font-size: 11px;">Decline</button>
+                  <button style="flex: 1; padding: 6px; border-radius: 999px; background: var(--brand-gradient); border: none; color: #fff; font-size: 11px; font-weight: 700;">Accept</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Key Features Grid -->
+  <section class="section features-section" id="features">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">FEATURES & TRANSPARENCY</span>
+        <h2 class="section-title">Built with <span class="gradient-text">Integrity & Respect</span></h2>
+        <p class="section-subtitle">We build for quality over endless swiping addiction.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-sliders-horizontal"></i></div>
+          <h3 class="feature-title">100% Free Advanced Filters</h3>
+          <p class="feature-desc">Filter by mother tongue, faith, diet, and relationship goals freely. We never paywall your basic search preferences.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-globe-hemisphere-west"></i></div>
+          <h3 class="feature-title">Global NRI Travel Mode</h3>
+          <p class="feature-desc">Connect with eligible singles in your local city or across major South Asian hubs worldwide (NYC, London, Toronto, Bay Area).</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-shield-check"></i></div>
+          <h3 class="feature-title">100% Anti-Catfish Shield</h3>
+          <p class="feature-desc">Mandatory on-device selfie verification ensures every profile is genuine. Unverified accounts cannot message freely.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-map-pin-line"></i></div>
+          <h3 class="feature-title">Geohash Privacy (No GPS Leaks)</h3>
+          <p class="feature-desc">We never store raw GPS coordinates. Location is reduced to coarse ~1.2km geohash cells to protect your home privacy.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-chart-line-up"></i></div>
+          <h3 class="feature-title">Honest Personal Insights</h3>
+          <p class="feature-desc">See your real computed response rate, total likes received, and popularity percentile — computed from live data, never made up.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ph-bold ph-coins"></i></div>
+          <h3 class="feature-title">Cosmetic-Only Coins</h3>
+          <p class="feature-desc">Coins are strictly for boosts and profile highlights. They can never buy access to people, likes, or messaging.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Compatibility & Values Section -->
+  <section class="section quiz-section" id="compatibility">
+    <div class="container">
+      <div class="quiz-card">
+        <div class="quiz-header text-center">
+          <span class="sub-badge">COMPATIBILITY ENGINE</span>
+          <h2 class="section-title">Discover Your <span class="gradient-text">Dosti Match Alignment</span></h2>
+          <p class="section-subtitle">Answer 3 quick questions to see how our compatibility engine pairs you.</p>
+        </div>
+
+        <div class="quiz-body" id="quizBody">
+          <!-- Question 1 -->
+          <div class="quiz-step active" id="qStep1">
+            <h4 class="q-title">1. What's your relationship goal right now?</h4>
+            <div class="q-options">
+              <button class="q-opt" onclick="selectQuiz(1, 'Life partner / marriage-minded')">💍 Life partner / marriage-minded</button>
+              <button class="q-opt" onclick="selectQuiz(1, 'Long-term relationship')">❤️ Long-term relationship</button>
+              <button class="q-opt" onclick="selectQuiz(1, 'Long-term, open to seeing how it goes')">✨ Long-term, open to seeing how it goes</button>
+            </div>
+          </div>
+
+          <!-- Question 2 -->
+          <div class="quiz-step" id="qStep2" style="display:none;">
+            <h4 class="q-title">2. What's your top weekend vibe?</h4>
+            <div class="q-options">
+              <button class="q-opt" onclick="selectQuiz(2, 'Out & social (brunches, events, friends)')">🥂 Out & social (brunches, events, friends)</button>
+              <button class="q-opt" onclick="selectQuiz(2, 'Cozy at home (cooking, movies, deep talks)')">🍲 Cozy at home (cooking, movies, deep talks)</button>
+              <button class="q-opt" onclick="selectQuiz(2, 'Outdoors & adventures (hiking, travel)')">🥾 Outdoors & adventures (hiking, travel)</button>
+            </div>
+          </div>
+
+          <!-- Question 3 -->
+          <div class="quiz-step" id="qStep3" style="display:none;">
+            <h4 class="q-title">3. Where are you looking to connect?</h4>
+            <div class="q-options">
+              <button class="q-opt" onclick="selectQuiz(3, 'India Metros (Mumbai, Delhi, Bengaluru, Hyd)')">🏙️ India Metros (Mumbai, Delhi, Bengaluru, Hyd)</button>
+              <button class="q-opt" onclick="selectQuiz(3, 'Global NRI Hubs (US, UK, Canada, Australia)')">🌍 Global NRI Hubs (US, UK, Canada, Australia)</button>
+              <button class="q-opt" onclick="selectQuiz(3, 'Open to genuine connection anywhere')">✨ Open to genuine connection anywhere</button>
+            </div>
+          </div>
+
+          <!-- Quiz Result Display -->
+          <div class="quiz-result" id="quizResult" style="display:none;">
+            <div class="result-score-circle">
+              <span class="result-score">98%</span>
+              <span class="result-label">Alignment</span>
+            </div>
+            <h3 class="result-title">High Compatibility Match Found!</h3>
+            <p class="result-desc">
+              Based on your preferences, there are over <strong>1,200+ verified singles</strong> matching your exact intent and cultural values.
+            </p>
+            <div class="result-sample-matches">
+              <div class="sample-chip">✨ Priya (27, Bengaluru) &bull; 98% Match</div>
+              <div class="sample-chip">✨ Aryan (29, San Francisco) &bull; 96% Match</div>
+              <div class="sample-chip">✨ Meera (26, London) &bull; 95% Match</div>
+            </div>
+            <button class="btn btn-primary" onclick="openQrModal()">Join DostiConnect <i class="ph ph-arrow-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Plans Section -->
+  <section class="section vip-section" id="plans">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">FAIR PRICING</span>
+        <h2 class="section-title">Free for Everyone, <span class="gradient-text">Plus for Speed</span></h2>
+        <p class="section-subtitle">We sell reach and insight — never access to people. Swiping and messaging are free forever.</p>
+      </div>
+
+      <div class="pricing-grid">
+        <!-- Free Plan -->
+        <div class="price-card">
+          <div class="price-header">
+            <h3 class="plan-name">Community Free</h3>
+            <div class="plan-price">₹0 <span>/ forever</span></div>
+            <p class="plan-desc">Full access to high-intent dating.</p>
+          </div>
+          <ul class="plan-features">
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Unlimited swiping & matching</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Unlimited messaging</strong> with matches</li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>1 Free reveal per week</strong> in Likes You</li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>All basic & advanced filters free</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> Selfie verification badge</li>
+            <li class="disabled"><i class="ph-bold ph-x"></i> See all admirers unblurred</li>
+            <li class="disabled"><i class="ph-bold ph-x"></i> Rewind your last swipe</li>
+            <li class="disabled"><i class="ph-bold ph-x"></i> Global Travel Mode</li>
+          </ul>
+          <a href="#download" class="btn btn-ghost full-w">Get Started Free</a>
+        </div>
+
+        <!-- Plus Plan -->
+        <div class="price-card popular">
+          <div class="popular-tag">MOST POPULAR</div>
+          <div class="price-header">
+            <h3 class="plan-name">DostiConnect Plus</h3>
+            <div class="plan-price">₹249 <span>/ month</span></div>
+            <p class="plan-desc">For meeting more compatible people, faster.</p>
+          </div>
+          <ul class="plan-features">
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>See everyone who likes you</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Rewind your last swipe</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Global Travel Mode</strong> (match anywhere)</li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Priority placement</strong> in the deck</li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>10 Direct Requests / day</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Read receipts & incognito mode</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> Weekly profile Spotlight Boost</li>
+          </ul>
+          <a href="#download" class="btn btn-primary full-w">Upgrade to Plus</a>
+        </div>
+
+        <!-- Premium Plan -->
+        <div class="price-card">
+          <div class="price-header">
+            <h3 class="plan-name" style="color: var(--violet);">DostiConnect Premium</h3>
+            <div class="plan-price">₹599 <span>/ month</span></div>
+            <p class="plan-desc">For serious daters who want an edge.</p>
+          </div>
+          <ul class="plan-features">
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Everything in Plus included</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Unlimited Super Likes with comments</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Top placement</strong> — seen before anyone else</li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Advanced AI compatibility scoring</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> <strong>Profile optimization review</strong></li>
+            <li><i class="ph-bold ph-check text-gold"></i> Early access to new features</li>
+          </ul>
+          <a href="#download" class="btn btn-ghost full-w" style="border-color: var(--violet); color: #fff;">Get Premium</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Real Success Stories -->
+  <section class="section stories-section" id="stories">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">SUCCESS STORIES</span>
+        <h2 class="section-title">Real People. <span class="gradient-text">Real Jodis.</span></h2>
+        <p class="section-subtitle">Real couples who met through DostiConnect and found their lifelong companion.</p>
+      </div>
+
+      <div class="stories-grid">
+        <div class="story-card">
+          <div class="story-quote">"</div>
+          <p class="story-text">
+            "Vikram liked my prompt on indie music with a witty comment that made me smile instantly. That comment turned into our first date in Mumbai, and now we are engaged!"
+          </p>
+          <div class="story-author">
+            <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&auto=format&fit=crop&q=80" alt="Ananya & Vikram" />
+            <div>
+              <h4 class="author-name">Ananya & Vikram</h4>
+              <p class="author-loc">Bengaluru &bull; Mumbai</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card">
+          <div class="story-quote">"</div>
+          <p class="story-text">
+            "Being an NRI in London, finding someone who shared my Punjabi roots and values felt difficult until DostiConnect. The selfie verification and voice intros made it feel genuine from day one."
+          </p>
+          <div class="story-author">
+            <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&auto=format&fit=crop&q=80" alt="Rohan & Simran" />
+            <div>
+              <h4 class="author-name">Rohan & Simran</h4>
+              <p class="author-loc">London &bull; Chandigarh</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="story-card">
+          <div class="story-quote">"</div>
+          <p class="story-text">
+            "The direct Request feature allowed Kabir to send me a thoughtful note. We instantly connected on our shared diet, faith, and family values. We got married last month!"
+          </p>
+          <div class="story-author">
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&auto=format&fit=crop&q=80" alt="Priya & Kabir" />
+            <div>
+              <h4 class="author-name">Priya & Kabir</h4>
+              <p class="author-loc">Toronto &bull; Delhi</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Accordion Section -->
+  <section class="section faq-section" id="faq">
+    <div class="container">
+      <div class="section-header text-center">
+        <span class="sub-badge">FREQUENTLY ASKED QUESTIONS</span>
+        <h2 class="section-title">Got Questions? <span class="gradient-text">We've Got Answers.</span></h2>
+      </div>
+
+      <div class="faq-accordion">
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Is DostiConnect free to use?</span>
+            <i class="ph ph-caret-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p><strong>Yes.</strong> Swiping, liking, matching, and unlimited messaging with your mutual matches are 100% free. We also give every user 1 free reveal per week in Likes You, plus completely free access to all search filters.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How do Direct Requests work?</span>
+            <i class="ph ph-caret-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>Direct Requests allow you to send a personal note to someone you haven't matched with yet. When they open their Requests tab, they see your note. If they accept, you match instantly and your note becomes the first message.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>How does selfie verification protect my privacy?</span>
+            <i class="ph ph-caret-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>Selfie verification runs on your phone to confirm your face matches your photos. The selfie photo is never uploaded to any cloud server — only a cryptographic verified badge is saved.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <button class="faq-question">
+            <span>Can I connect with Desi / NRI singles across countries?</span>
+            <i class="ph ph-caret-down"></i>
+          </button>
+          <div class="faq-answer">
+            <p>Yes! With Travel Mode (available with DostiConnect Plus), you can change your city to major South Asian diaspora hubs across the US, Canada, UK, Australia, and India.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final Download Call To Action -->
+  <section class="section download-section" id="download">
+    <div class="container">
+      <div class="download-card">
+        <div class="download-content">
+          <span class="sub-badge">GET STARTED</span>
+          <h2 class="download-title">Ready to Find Your Jodi?</h2>
+          <p class="download-desc">
+            Join thousands of verified South Asian singles finding meaningful, high-intent relationships.
+          </p>
+
+          <div class="hero-cta-group">
+            <button class="store-badge-btn" onclick="openQrModal('ios')">
+              <i class="ph-bold ph-apple-logo"></i>
+              <div class="badge-text">
+                <span class="badge-sub">Download on the</span>
+                <span class="badge-main">App Store</span>
+              </div>
+            </button>
+
+            <button class="store-badge-btn" onclick="openQrModal('android')">
+              <i class="ph-bold ph-google-play-logo"></i>
+              <div class="badge-text">
+                <span class="badge-sub">Get it on</span>
+                <span class="badge-main">Google Play</span>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <div class="download-qr-box">
+          <div class="qr-frame">
+            <svg viewBox="0 0 100 100" class="qr-code-svg">
+              <rect width="100" height="100" fill="#ffffff" rx="8"/>
+              <rect x="10" y="10" width="24" height="24" fill="#0B0D14" rx="4"/>
+              <rect x="14" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+              <rect x="18" y="18" width="8" height="8" fill="#FF7A2E" rx="1"/>
+              
+              <rect x="66" y="10" width="24" height="24" fill="#0B0D14" rx="4"/>
+              <rect x="70" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+              <rect x="74" y="18" width="8" height="8" fill="#FF7A2E" rx="1"/>
+              
+              <rect x="10" y="66" width="24" height="24" fill="#0B0D14" rx="4"/>
+              <rect x="14" y="70" width="16" height="16" fill="#ffffff" rx="2"/>
+              <rect x="18" y="74" width="8" height="8" fill="#FF7A2E" rx="1"/>
+              
+              <rect x="40" y="12" width="6" height="6" fill="#0B0D14"/>
+              <rect x="52" y="12" width="6" height="6" fill="#0B0D14"/>
+              <rect x="44" y="24" width="12" height="6" fill="#0B0D14"/>
+              <rect x="12" y="44" width="6" height="14" fill="#0B0D14"/>
+              <rect x="24" y="48" width="8" height="6" fill="#0B0D14"/>
+              <rect x="40" y="40" width="20" height="20" fill="#FF5E3A" rx="2"/>
+              <rect x="68" y="44" width="8" height="8" fill="#0B0D14"/>
+              <rect x="80" y="52" width="8" height="6" fill="#0B0D14"/>
+              <rect x="42" y="68" width="14" height="6" fill="#0B0D14"/>
+              <rect x="48" y="80" width="10" height="8" fill="#0B0D14"/>
+              <rect x="68" y="72" width="18" height="14" fill="#0B0D14"/>
+            </svg>
+          </div>
+          <p class="qr-caption"><i class="ph ph-camera"></i> Scan to test on your phone</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand-col">
+        <div class="brand-logo">
+          <div class="logo-mark">
+            <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="20" r="11" stroke="url(#goldGradFooter)" stroke-width="3"/>
+              <circle cx="24" cy="20" r="11" stroke="url(#goldGradFooter)" stroke-width="3"/>
+              <defs>
+                <linearGradient id="goldGradFooter" x1="5" y1="9" x2="35" y2="31" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#FF9F1C"/>
+                  <stop offset="0.5" stop-color="#FF5E3A"/>
+                  <stop offset="1" stop-color="#FF2D55"/>
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+          <div class="logo-text">
+            <span class="brand-name">DostiConnect</span>
+            <span class="brand-sub">Serious About Finding Your Jodi</span>
+          </div>
+        </div>
+        <p class="footer-tagline">
+          The intentional dating & connection platform for South Asian singles worldwide.
+        </p>
+        <div class="social-links">
+          <a href="#" aria-label="Instagram"><i class="ph-bold ph-instagram-logo"></i></a>
+          <a href="#" aria-label="Twitter / X"><i class="ph-bold ph-x-logo"></i></a>
+          <a href="#" aria-label="LinkedIn"><i class="ph-bold ph-linkedin-logo"></i></a>
+        </div>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 class="footer-head">Product</h4>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#features">Features</a>
+        <a href="#plans">Plus & Premium</a>
+        <a href="#app-preview">App Preview</a>
+        <a href="#stories">Success Stories</a>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 class="footer-head">Communities</h4>
+        <a href="#">Mumbai &bull; Delhi NCR</a>
+        <a href="#">Bengaluru &bull; Hyderabad</a>
+        <a href="#">NYC &bull; San Francisco</a>
+        <a href="#">London &bull; Toronto</a>
+      </div>
+
+      <div class="footer-links-col">
+        <h4 class="footer-head">Trust & Safety</h4>
+        <a href="#">Selfie Verification</a>
+        <a href="#">Location Privacy</a>
+        <a href="#">Community Guidelines</a>
+        <a href="#">Terms & Privacy</a>
+      </div>
+    </div>
+
+    <div class="container footer-bottom">
+      <p>&copy; 2026 DostiConnect. All rights reserved.</p>
+      <div class="footer-bottom-links">
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Security</a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- QR Code Pop-up Modal -->
+  <div class="modal-backdrop" id="qrModal">
+    <div class="modal-dialog">
+      <button class="modal-close" onclick="closeQrModal()"><i class="ph ph-x"></i></button>
+      <div class="modal-header text-center">
+        <div class="modal-icon-gold"><i class="ph-bold ph-device-mobile"></i></div>
+        <h3 class="modal-title">Test DostiConnect Live</h3>
+        <p class="modal-sub">Scan the QR code below on your phone with the <strong>Expo Go</strong> app to test the live app instantly!</p>
+      </div>
+
+      <div class="modal-qr-container">
+        <svg viewBox="0 0 100 100" class="qr-code-svg modal-qr">
+          <rect width="100" height="100" fill="#ffffff" rx="8"/>
+          <rect x="10" y="10" width="24" height="24" fill="#0B0D14" rx="4"/>
+          <rect x="14" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="18" y="18" width="8" height="8" fill="#FF7A2E" rx="1"/>
+          
+          <rect x="66" y="10" width="24" height="24" fill="#0B0D14" rx="4"/>
+          <rect x="70" y="14" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="74" y="18" width="8" height="8" fill="#FF7A2E" rx="1"/>
+          
+          <rect x="10" y="66" width="24" height="24" fill="#0B0D14" rx="4"/>
+          <rect x="14" y="70" width="16" height="16" fill="#ffffff" rx="2"/>
+          <rect x="18" y="74" width="8" height="8" fill="#FF7A2E" rx="1"/>
+          
+          <rect x="40" y="12" width="6" height="6" fill="#0B0D14"/>
+          <rect x="52" y="12" width="6" height="6" fill="#0B0D14"/>
+          <rect x="44" y="24" width="12" height="6" fill="#0B0D14"/>
+          <rect x="12" y="44" width="6" height="14" fill="#0B0D14"/>
+          <rect x="24" y="48" width="8" height="6" fill="#0B0D14"/>
+          <rect x="40" y="40" width="20" height="20" fill="#FF5E3A" rx="2"/>
+          <rect x="68" y="44" width="8" height="8" fill="#0B0D14"/>
+          <rect x="80" y="52" width="8" height="6" fill="#0B0D14"/>
+          <rect x="42" y="68" width="14" height="6" fill="#0B0D14"/>
+          <rect x="48" y="80" width="10" height="8" fill="#0B0D14"/>
+          <rect x="68" y="72" width="18" height="14" fill="#0B0D14"/>
+        </svg>
+      </div>
+
+      <div class="modal-instructions">
+        <div class="instruction-step">
+          <span class="inst-num">1</span>
+          <span>Open Camera (iOS) or Expo Go (Android)</span>
+        </div>
+        <div class="instruction-step">
+          <span class="inst-num">2</span>
+          <span>Point camera at the QR code</span>
+        </div>
+        <div class="instruction-step">
+          <span class="inst-num">3</span>
+          <span>Launch and test DostiConnect instantly!</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

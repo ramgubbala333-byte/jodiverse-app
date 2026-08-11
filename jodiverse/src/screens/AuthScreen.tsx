@@ -12,7 +12,7 @@ import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import { theme } from "../theme";
 
 const GENDERS = ["Woman", "Man", "Non-binary"] as const;
-const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
+const WORDMARK = "DostiConnect";
 
 // LoveAI-style marketing landing + "Create Your Account" (Step 1 of 4).
 // Steps 2-4 of the Smart Profile Builder live in OnboardingScreen; name,

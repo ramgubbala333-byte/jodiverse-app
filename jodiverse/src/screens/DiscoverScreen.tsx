@@ -10,9 +10,10 @@ import { supabase } from "../lib/supabase";
 import { deckAllPhotoUrls, listOwnPhotos } from "../lib/photos";
 import { withEmoji } from "../lib/interests";
 import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
+import PressableScale from "../components/PressableScale";
 import { theme } from "../theme";
 
-const WORDMARK = "Dosti Connect"; // TODO: swap when the final app name is locked
+const WORDMARK = "DostiConnect";
 
 type Prompt = { q: string; a: string };
 type P = { id: string; display_name: string; age: number; city: string | null;
@@ -400,25 +401,26 @@ export default function DiscoverScreen() {
 
       {/* action bar — rewind / pass / super like / like / request */}
       <View style={s.actions}>
-        <TouchableOpacity style={s.miniBtn} onPress={rewind}>
+        <PressableScale style={s.miniBtn} onPress={rewind} haptics="light" scaleTo={0.88}>
           <Ionicons name="refresh" size={20} color={theme.muted} />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.passBtn} onPress={pass}>
+        </PressableScale>
+        <PressableScale style={s.passBtn} onPress={pass} haptics="medium" scaleTo={0.88}>
           <Ionicons name="close" size={30} color={theme.danger} />
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.miniBtn, s.superBtn]} onPress={superLike}>
+        </PressableScale>
+        <PressableScale style={[s.miniBtn, s.superBtn]} onPress={superLike} haptics="success" scaleTo={0.88}>
           <Ionicons name="star" size={20} color={theme.purple} />
-        </TouchableOpacity>
-        <TouchableOpacity style={s.likeBtn}
-          onPress={() => openLike({ kind: "profile", label: current.display_name })}>
+        </PressableScale>
+        <PressableScale style={s.likeBtn}
+          onPress={() => openLike({ kind: "profile", label: current.display_name })}
+          haptics="success" scaleTo={0.88}>
           <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
             style={StyleSheet.absoluteFill} />
           <Ionicons name="heart" size={28} color="#fff" />
-        </TouchableOpacity>
-        <TouchableOpacity style={[s.miniBtn, s.reqBtn]}
-          onPress={() => { setReqText(""); setReqOpen(true); }}>
+        </PressableScale>
+        <PressableScale style={[s.miniBtn, s.reqBtn]}
+          onPress={() => { setReqText(""); setReqOpen(true); }} haptics="light" scaleTo={0.88}>
           <Ionicons name="mail" size={20} color={theme.rose} />
-        </TouchableOpacity>
+        </PressableScale>
       </View>
 
       {/* Request — message before matching (rate-limited server-side) */}

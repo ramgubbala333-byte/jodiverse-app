@@ -1,20 +1,20 @@
 import React, { useEffect, useRef } from "react";
 import {
-  View, Text, TouchableOpacity, StyleSheet, Animated, Easing, Image, ScrollView,
+  View, Text, StyleSheet, Animated, Easing, Image, ScrollView,
 } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
 import AuroraShaderBackdrop from "../components/AuroraShaderBackdrop";
 import WhyMatchedCard from "../components/WhyMatchedCard";
+import PressableScale from "../components/PressableScale";
 import { haptic } from "../lib/haptics";
 import { theme } from "../theme";
 
 type Params = { matchId: string; name: string; otherId?: string;
   theirPhoto?: string | null; myPhoto?: string | null };
 
-// Mutual like. Photos are already known to both sides — they saw them in
-// the deck before liking — so the celebration shows the real photos.
 export default function MatchedScreen() {
   const { matchId, name, otherId, theirPhoto, myPhoto } = useRoute().params as Params;
   const nav = useNavigation<any>();
@@ -22,16 +22,25 @@ export default function MatchedScreen() {
   const popL = useRef(new Animated.Value(0)).current;
   const popR = useRef(new Animated.Value(0)).current;
   const rise = useRef(new Animated.Value(30)).current;
+  const ringScale = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     haptic.success();
-    Animated.stagger(90, [
-      Animated.spring(popL, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
-      Animated.spring(popR, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
+    Animated.parallel([
+      Animated.spring(ringScale, { toValue: 1, friction: 5, tension: 50, useNativeDriver: true }),
+      Animated.stagger(120, [
+        Animated.spring(popL, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
+        Animated.spring(popR, { toValue: 1, friction: 6, tension: 70, useNativeDriver: true }),
+      ]),
+      Animated.timing(rise, {
+        toValue: 0,
+        duration: 500,
+        delay: 150,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
     ]).start();
-    Animated.timing(rise, { toValue: 0, duration: 500, delay: 120,
-      easing: Easing.out(Easing.cubic), useNativeDriver: true }).start();
-  }, [popL, popR, rise]);
+  }, [popL, popR, rise, ringScale]);
 
   const cardStyle = (pop: Animated.Value, rotateDeg: number) => ({
     transform: [
@@ -45,7 +54,10 @@ export default function MatchedScreen() {
       <AuroraShaderBackdrop />
       <ScrollView contentContainerStyle={[s.scrollBody, { paddingBottom: 20 + insets.bottom }]}
         showsVerticalScrollIndicator={false}>
+        
+        {/* Animated Rings & Cards */}
         <View style={s.cardsRow}>
+          <Animated.View style={[s.glowRing, { transform: [{ scale: ringScale }] }]} />
           <Animated.View style={[s.card, s.cardBack, cardStyle(popL, -10)]}>
             {myPhoto ? <Image source={{ uri: myPhoto }} style={StyleSheet.absoluteFill} /> : (
               <LinearGradient colors={[...theme.gradViolet]} style={StyleSheet.absoluteFill} />
@@ -62,28 +74,38 @@ export default function MatchedScreen() {
         </View>
 
         <Animated.View style={{ transform: [{ translateY: rise }], alignItems: "center" }}>
-          <Text style={s.eyebrow}>CONGRATULATIONS</Text>
-          <Text style={s.title}>It's a match!</Text>
+          <View style={s.eyebrowPill}>
+            <Ionicons name="sparkles" size={12} color={theme.gold} />
+            <Text style={s.eyebrow}>IT'S A JODI!</Text>
+          </View>
+          <Text style={s.title}>You Matched!</Text>
           <Text style={s.sub}>You and {name} liked each other.</Text>
         </Animated.View>
 
         {otherId && (
-          <View style={{ width: "100%", marginTop: 26 }}>
+          <View style={{ width: "100%", marginTop: 20 }}>
             <WhyMatchedCard otherId={otherId} />
           </View>
         )}
 
-        <View style={{ flex: 1, minHeight: 30 }} />
+        <View style={{ flex: 1, minHeight: 28 }} />
 
-        <TouchableOpacity style={{ width: "100%" }} onPress={() => nav.replace("Chat", { matchId, name })}>
+        <PressableScale
+          style={{ width: "100%" }}
+          onPress={() => nav.replace("Chat", { matchId, name })}
+          haptics="success"
+          scaleTo={0.96}
+        >
           <LinearGradient colors={[...theme.grad]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
             style={s.cta}>
+            <Ionicons name="chatbubbles" size={18} color="#fff" style={{ marginRight: 8 }} />
             <Text style={s.ctaText}>Send a message</Text>
           </LinearGradient>
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => nav.navigate("Tabs", { screen: "Discover" })}>
+        </PressableScale>
+
+        <PressableScale onPress={() => nav.navigate("Tabs", { screen: "Discover" })} haptics="light">
           <Text style={s.later}>Keep exploring</Text>
-        </TouchableOpacity>
+        </PressableScale>
       </ScrollView>
     </View>
   );
@@ -91,22 +113,24 @@ export default function MatchedScreen() {
 
 const s = StyleSheet.create({
   wrap: { flex: 1, backgroundColor: theme.bg, overflow: "hidden" },
-  scrollBody: { paddingHorizontal: 26, alignItems: "center", flexGrow: 1 },
-  cardsRow: { width: 180, height: 140, marginBottom: 22 },
-  card: { position: "absolute", width: 118, height: 140, borderRadius: 24, overflow: "hidden",
+  scrollBody: { paddingHorizontal: 20, alignItems: "center", flexGrow: 1 },
+  cardsRow: { width: 190, height: 150, marginBottom: 22, alignItems: "center", justifyContent: "center" },
+  glowRing: { position: "absolute", width: 180, height: 180, borderRadius: 90,
+    borderWidth: 2, borderColor: "rgba(255, 122, 46, 0.35)", backgroundColor: "rgba(255, 122, 46, 0.06)" },
+  card: { position: "absolute", width: 120, height: 144, borderRadius: 24, overflow: "hidden",
     alignItems: "center", justifyContent: "center",
-    shadowColor: "#000", shadowOpacity: 0.35, shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 }, elevation: 6 },
-  cardBack: { left: 0, top: 6 },
-  cardFront: { right: 0, top: 0 },
-  cardInitial: { color: "#fff", fontSize: 46, fontFamily: theme.font.black },
-  eyebrow: { color: theme.gold, fontSize: 12, fontFamily: theme.font.black, letterSpacing: 2.5 },
-  title: { color: theme.ink, fontSize: 40, fontFamily: theme.font.display, marginTop: 10,
-    letterSpacing: -1.2, textAlign: "center" },
-  sub: { color: theme.muted, fontSize: 14.5, textAlign: "center", marginTop: 14,
-    lineHeight: 21, paddingHorizontal: 10 },
-  cta: { borderRadius: theme.radii.pill, paddingVertical: 18,
-    alignItems: "center", ...theme.shadow.cta },
-  ctaText: { color: theme.onGold, fontFamily: theme.font.black, fontSize: 16, letterSpacing: 0.2 },
-  later: { color: theme.muted, fontFamily: theme.font.bold, marginTop: 20, fontSize: 14 },
+    shadowColor: "#000", shadowOpacity: 0.45, shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 }, elevation: 8, borderWidth: 1, borderColor: "rgba(255,255,255,0.15)" },
+  cardBack: { left: 8, top: 4 },
+  cardFront: { right: 8, top: 0 },
+  cardInitial: { color: "#fff", fontSize: 44, fontFamily: theme.font.black },
+  eyebrowPill: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(255,122,46,0.12)",
+    borderWidth: 1, borderColor: "rgba(255,122,46,0.3)", borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, marginBottom: 10 },
+  eyebrow: { color: theme.gold, fontSize: 11, fontFamily: theme.font.bold, letterSpacing: 1.5 },
+  title: { color: theme.ink, fontSize: 32, fontFamily: theme.font.displayLg, letterSpacing: -0.5 },
+  sub: { color: theme.muted, fontSize: 14, marginTop: 4, fontFamily: theme.font.medium },
+  cta: { borderRadius: 999, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center",
+    ...theme.shadow.cta },
+  ctaText: { color: "#fff", fontFamily: theme.font.black, fontSize: 15, letterSpacing: 0.3 },
+  later: { color: theme.muted, fontSize: 13, fontFamily: theme.font.semibold, marginTop: 16, padding: 8 },
 });

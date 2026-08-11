@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "Dosti Connect",
-    "slug": "jodiverse",
-    "scheme": "jodiverse",
+    "name": "DostiConnect",
+    "slug": "dosticonnect",
+    "scheme": "dosticonnect",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
@@ -10,11 +10,24 @@
       "backgroundColor": "#0B0D14"
     },
     "ios": {
-      "bundleIdentifier": "com.jodiverse.app",
-      "supportsTablet": false
+      "bundleIdentifier": "com.dosticonnect.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Used to take selfie verification photos.",
+        "NSMicrophoneUsageDescription": "Used to record your voice intro and for voice calls.",
+        "NSPhotoLibraryUsageDescription": "Used to select profile photos and video clips.",
+        "NSLocationWhenInUseUsageDescription": "Used to calculate approximate distance with potential matches."
+      }
     },
     "android": {
-      "package": "com.jodiverse.app"
+      "package": "com.dosticonnect.app",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "READ_EXTERNAL_STORAGE"
+      ]
     },
     "plugins": [
       "expo-secure-store",
@@ -22,7 +35,25 @@
       "expo-web-browser",
       "expo-video",
       "expo-audio",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Used to take selfie verification photos."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Used to select profile photos and video clips."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Used to calculate approximate distance with potential matches."
+        }
+      ]
     ]
   }
 }
