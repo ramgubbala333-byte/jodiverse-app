@@ -17,16 +17,6 @@ type Msg = { id: string; sender: string; body: string; image_path: string | null
 const EMOJI = ["😍", "😂", "🥰", "🔥", "😅", "🙈", "💜", "👋", "🤝", "😉", "🎉", "🙏"];
 const GIPHY_KEY = process.env.EXPO_PUBLIC_GIPHY_KEY;
 
-// Cosmetic-only — gifts cost coins, never call time or messages.
-const GIFTS = [
-  { key: "rose", emoji: "🌹", label: "Rose", cost: 50 },
-  { key: "coffee", emoji: "☕", label: "Coffee", cost: 80 },
-  { key: "sparkle", emoji: "✨", label: "Sparkle", cost: 120 },
-  { key: "heart", emoji: "💝", label: "Heart", cost: 200 },
-  { key: "crown", emoji: "👑", label: "Crown", cost: 500 },
-  { key: "diamond", emoji: "💎", label: "Diamond", cost: 1000 },
-] as const;
-
 export default function ChatScreen() {
   const { matchId, name, otherId } = (useRoute().params as
     { matchId: string; name: string; otherId?: string });
@@ -42,8 +32,6 @@ export default function ChatScreen() {
   const [gifs, setGifs] = useState<{ id: string; preview: string; full: string }[]>([]);
   const [gifBusy, setGifBusy] = useState(false);
   const [sendingImg, setSendingImg] = useState(false);
-  const [giftOpen, setGiftOpen] = useState(false);
-  const [coinBalance, setCoinBalance] = useState<number | null>(null);
   const [verified, setVerified] = useState(true); // assume true until loaded, avoids a banner flash
   const list = useRef<FlatList>(null);
 
@@ -90,7 +78,6 @@ export default function ChatScreen() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       setMe(user.id);
-      supabase.rpc("my_coin_balance").then(({ data }) => setCoinBalance(data ?? 0));
       supabase.from("profiles").select("is_verified").eq("id", user.id).maybeSingle()
         .then(({ data: p }) => setVerified(!!p?.is_verified));
       const { data } = await supabase.from("messages")
@@ -179,23 +166,6 @@ export default function ChatScreen() {
       .insert({ match_id: matchId, sender: me, body: "GIF", image_path: fullUrl });
   };
 
-  const sendGift = async (gift: typeof GIFTS[number]) => {
-    if ((coinBalance ?? 0) < gift.cost) {
-      setGiftOpen(false);
-      Alert.alert("Not enough coins",
-        `${gift.label} costs ${gift.cost} coins — you have ${coinBalance ?? 0}.`,
-        [{ text: "Later", style: "cancel" },
-         { text: "Get coins", onPress: () => nav.navigate("Coins") }]);
-      return;
-    }
-    const { data, error } = await supabase.rpc("send_gift", {
-      p_match: matchId, p_gift_key: gift.key, p_cost: gift.cost, p_emoji: gift.emoji,
-    });
-    setGiftOpen(false);
-    if (error) { Alert.alert("Couldn't send gift", error.message); return; }
-    setCoinBalance(data?.balance ?? null);
-  };
-
   return (
     <KeyboardAvoidingView style={s.wrap}
       behavior={Platform.OS === "ios" ? "padding" : undefined} keyboardVerticalOffset={90}>
@@ -261,9 +231,6 @@ export default function ChatScreen() {
           onPress={() => { setGifOpen(true); setGifs([]); setGifQuery(""); searchGifs(""); }}>
           <Text style={s.gifText}>GIF</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={s.toolBtn} onPress={() => setGiftOpen(true)} disabled={limited}>
-          <Ionicons name="gift-outline" size={22} color={theme.gold} />
-        </TouchableOpacity>
         {limited ? (
           <View style={[s.input, s.inputDisabled]}>
             <Text style={s.inputDisabledText}>Message sent — waiting for a reply</Text>
@@ -315,35 +282,6 @@ export default function ChatScreen() {
         </View>
       </Modal>
 
-      {/* gift picker — coins only, never call time or messages */}
-      <Modal visible={giftOpen} animationType="slide" transparent
-        onRequestClose={() => setGiftOpen(false)}>
-        <View style={s.gifBg}>
-          <View style={s.giftSheet}>
-            <View style={s.giftHeader}>
-              <Text style={s.giftTitle}>Send a gift</Text>
-              <TouchableOpacity onPress={() => setGiftOpen(false)}>
-                <Ionicons name="close" size={24} color={theme.muted} />
-              </TouchableOpacity>
-            </View>
-            <Text style={s.giftBalance}>
-              🪙 {coinBalance ?? 0} coins ·{" "}
-              <Text style={s.giftGetMore} onPress={() => { setGiftOpen(false); nav.navigate("Coins"); }}>
-                Get more
-              </Text>
-            </Text>
-            <View style={s.giftGrid}>
-              {GIFTS.map((g) => (
-                <TouchableOpacity key={g.key} style={s.giftCell} onPress={() => sendGift(g)}>
-                  <Text style={s.giftEmoji}>{g.emoji}</Text>
-                  <Text style={s.giftLabel}>{g.label}</Text>
-                  <Text style={s.giftCost}>🪙 {g.cost}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        </View>
-      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -384,16 +322,4 @@ const s = StyleSheet.create({
     borderRadius: 999, paddingHorizontal: 16, paddingVertical: 9, color: theme.ink },
   gifCell: { flex: 1 / 3, aspectRatio: 1 },
   gifEmpty: { color: theme.muted, textAlign: "center", marginTop: 30, paddingHorizontal: 20 },
-  giftSheet: { backgroundColor: theme.card, borderTopLeftRadius: 24, borderTopRightRadius: 24,
-    padding: 20, paddingBottom: 30 },
-  giftHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  giftTitle: { color: theme.ink, fontSize: 19, fontFamily: theme.font.displayMd },
-  giftBalance: { color: theme.muted, fontSize: 13, marginTop: 8, marginBottom: 18 },
-  giftGetMore: { color: theme.gold, fontFamily: theme.font.bold },
-  giftGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
-  giftCell: { width: "31%", backgroundColor: theme.card2, borderRadius: theme.radii.md,
-    alignItems: "center", paddingVertical: 16, borderWidth: 1, borderColor: theme.line },
-  giftEmoji: { fontSize: 30 },
-  giftLabel: { color: theme.ink, fontSize: 12.5, fontFamily: theme.font.bold, marginTop: 6 },
-  giftCost: { color: theme.gold, fontSize: 11.5, fontFamily: theme.font.bold, marginTop: 3 },
 });

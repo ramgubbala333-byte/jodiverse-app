@@ -160,12 +160,12 @@ export default function PaywallScreen() {
         <Text style={s.laterText}>MAYBE LATER</Text>
       </TouchableOpacity>
 
-      {/* coins are a separate, cosmetic-only purchase */}
+      {/* coins are a separate, cosmetic-only purchase (boosts & profile extras) */}
       <PressableScale style={s.coinsCard} onPress={() => nav.navigate("Coins")}>
         <Ionicons name="logo-bitcoin" size={22} color={theme.gold} />
         <View style={{ flex: 1 }}>
-          <Text style={s.coinsTitle}>Just want to send a gift?</Text>
-          <Text style={s.coinsSub}>Coins are for gifts, boosts &amp; profile extras — no subscription needed.</Text>
+          <Text style={s.coinsTitle}>Just want a Boost?</Text>
+          <Text style={s.coinsSub}>Coins buy boosts &amp; profile extras — no subscription needed.</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={theme.muted} />
       </PressableScale>

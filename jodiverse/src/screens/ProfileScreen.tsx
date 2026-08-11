@@ -236,6 +236,9 @@ export default function ProfileScreen() {
       <View style={s.topBar}>
         <Text style={s.title}>You</Text>
         <View style={s.titleActions}>
+          <TouchableOpacity style={s.iconBtn} onPress={() => nav.navigate("Insights")}>
+            <Ionicons name="stats-chart-outline" size={20} color={theme.ink} />
+          </TouchableOpacity>
           <TouchableOpacity style={s.iconBtn} disabled={!uid} onPress={preview}>
             <Ionicons name="eye-outline" size={21} color={theme.ink} />
           </TouchableOpacity>

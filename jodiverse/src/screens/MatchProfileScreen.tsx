@@ -23,7 +23,9 @@ type Prof = { display_name: string; age: number; city: string | null; bio: strin
   interests: string[] | null; new_here: boolean;
   drinking: string | null; smoking: string | null; height_cm: number | null;
   occupation: string | null; activity_status?: string | null; gender?: string | null;
-  video_path: string | null; audio_path: string | null };
+  video_path: string | null; audio_path: string | null;
+  love_language?: string | null; workout?: string | null; traits?: string[] | null;
+  prompts?: { q: string; a: string }[] | null };
 
 const fmtHeight = (cm: number) =>
   `${Math.floor(cm / 30.48)}'${Math.round((cm % 30.48) / 2.54)}" (${cm} cm)`;
@@ -238,6 +240,41 @@ export default function MatchProfileScreen() {
 
       {photos.length > 1 && photoCard(1)}
 
+      {prof.traits?.length ? (
+        <View style={s.card}>
+          <Text style={s.eyebrow}>My traits</Text>
+          <View style={s.chipWrap}>
+            {prof.traits.map((t) => (
+              <View key={t} style={s.chip}><Text style={s.chipText}>{t}</Text></View>
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {(prof.love_language || prof.workout) && (
+        <View style={s.card}>
+          {prof.love_language ? (
+            <>
+              <Text style={s.eyebrow}>Love language</Text>
+              <Text style={s.factText}>{prof.love_language}</Text>
+            </>
+          ) : null}
+          {prof.workout ? (
+            <>
+              <Text style={[s.eyebrow, prof.love_language ? { marginTop: 16 } : null]}>Works out</Text>
+              <Text style={s.factText}>{prof.workout}</Text>
+            </>
+          ) : null}
+        </View>
+      )}
+
+      {prof.prompts?.length ? prof.prompts.map((p, i) => (
+        <View key={`pr${i}`} style={s.card}>
+          <Text style={s.eyebrow}>{p.q}</Text>
+          <Text style={s.promptAnswer}>{p.a}</Text>
+        </View>
+      )) : null}
+
       {interests.length ? (
         <View style={s.card}>
           <Text style={s.eyebrow}>My interests</Text>
@@ -308,6 +345,7 @@ const s = StyleSheet.create({
   eyebrow: { color: theme.muted, fontSize: 11, fontFamily: theme.font.bold, marginBottom: 10,
     textTransform: "uppercase", letterSpacing: 2 },
   bioSerif: { color: theme.ink, fontFamily: SERIF, fontSize: 24, lineHeight: 33 },
+  promptAnswer: { color: theme.ink, fontSize: 17, lineHeight: 25, fontFamily: theme.font.medium },
   photoCard: { marginHorizontal: 14, marginTop: 14, borderRadius: theme.radii.lg, overflow: "hidden",
     aspectRatio: 4 / 5, backgroundColor: theme.card, ...theme.shadow.card },
   photoEmpty: { alignItems: "center", justifyContent: "center" },

@@ -19,6 +19,9 @@ import AuthScreen from "./src/screens/AuthScreen";
 import OnboardingScreen from "./src/screens/OnboardingScreen";
 import DiscoverScreen from "./src/screens/DiscoverScreen";
 import LikesScreen from "./src/screens/LikesScreen";
+import RequestsScreen from "./src/screens/RequestsScreen";
+import InsightsScreen from "./src/screens/InsightsScreen";
+import FiltersScreen from "./src/screens/FiltersScreen";
 import MatchedScreen from "./src/screens/MatchedScreen";
 import CoinsScreen from "./src/screens/CoinsScreen";
 import ReferralScreen from "./src/screens/ReferralScreen";
@@ -193,6 +196,15 @@ export default function App() {
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Transactions" component={TransactionsScreen}
               options={{ headerShown: true, title: "Coin history", headerTintColor: theme.ink,
+                headerStyle: { backgroundColor: theme.card } }} />
+            <Stack.Screen name="Requests" component={RequestsScreen}
+              options={{ headerShown: true, title: "Requests", headerTintColor: theme.ink,
+                headerStyle: { backgroundColor: theme.card } }} />
+            <Stack.Screen name="Insights" component={InsightsScreen}
+              options={{ headerShown: true, title: "Your insights", headerTintColor: theme.ink,
+                headerStyle: { backgroundColor: theme.card } }} />
+            <Stack.Screen name="Filters" component={FiltersScreen}
+              options={{ headerShown: true, title: "Filters", headerTintColor: theme.ink,
                 headerStyle: { backgroundColor: theme.card } }} />
             <Stack.Screen name="Settings" component={SettingsScreen}
               options={{ headerShown: true, title: "Settings", headerTintColor: theme.ink,

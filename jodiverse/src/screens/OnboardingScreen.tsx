@@ -20,6 +20,12 @@ const LANGS = ["Hindi", "Telugu", "Tamil", "Punjabi", "Bengali", "Marathi", "Guj
 const DRINKS = ["Never", "Rarely", "Socially", "Regularly"];
 const SMOKES = ["Never", "Socially", "Regularly", "Trying to quit"];
 const LIFESTYLES = ["Active & Outdoorsy", "Social & Outgoing", "Quiet & Homebody", "Creative & Artistic", "Career-Focused"];
+const LOVE_LANGUAGES = ["Physical Touch", "Words of Affirmation", "Acts of Service",
+  "Quality Time", "Receiving Gifts"];
+const WORKOUTS = ["Often", "Sometimes", "Rarely"];
+const TRAIT_OPTIONS = ["Adventurous", "Flexible", "Active Listener", "Easy Going", "Caring",
+  "Courageous", "Foodie", "Ambitious", "Funny", "Creative", "Loyal", "Curious"];
+const MAX_TRAITS = 6;
 
 // Compatibility questionnaire — the heart of who you get voice-matched with.
 // Stored as profiles.compat jsonb; folded into match_score (compat-v24.sql).
@@ -88,6 +94,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [interests, setInterests] = useState<string[]>([]);
 
   const [lifestyle, setLifestyle] = useState<string | null>(null);
+  const [loveLanguage, setLoveLanguage] = useState<string | null>(null);
+  const [workout, setWorkout] = useState<string | null>(null);
+  const [traits, setTraits] = useState<string[]>([]);
   const [faith, setFaith] = useState<string | null>(null);
   const [diet, setDiet] = useState<string | null>(null);
   const [langs, setLangs] = useState<string[]>([]);
@@ -226,6 +235,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
         values_text: values.trim() || null,
         fun_facts: funFacts.trim() || null,
         lifestyle,
+        love_language: loveLanguage,
+        workout,
+        traits,
         interests,
         compat,
         city: city.trim() || null,
@@ -401,6 +413,32 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
                 <Text style={[s.lifeRowText, lifestyle === l && s.lifeRowTextOn]}>{l}</Text>
               </TouchableOpacity>
             ))}
+            <Text style={s.label}>My personality (pick up to {MAX_TRAITS})</Text>
+            <View style={s.chipWrap}>
+              {TRAIT_OPTIONS.map((t) => (
+                <Chip key={t} label={t} on={traits.includes(t)}
+                  onPress={() => setTraits((cur) =>
+                    cur.includes(t) ? cur.filter((x) => x !== t)
+                      : cur.length >= MAX_TRAITS ? cur : [...cur, t])} />
+              ))}
+            </View>
+
+            <Text style={s.label}>My love language</Text>
+            <View style={s.chipWrap}>
+              {LOVE_LANGUAGES.map((l) => (
+                <Chip key={l} label={l} on={loveLanguage === l}
+                  onPress={() => setLoveLanguage(loveLanguage === l ? null : l)} />
+              ))}
+            </View>
+
+            <Text style={s.label}>Do you work out?</Text>
+            <View style={s.chipWrap}>
+              {WORKOUTS.map((w) => (
+                <Chip key={w} label={w} on={workout === w}
+                  onPress={() => setWorkout(workout === w ? null : w)} />
+              ))}
+            </View>
+
             <Text style={s.label}>Faith (optional)</Text>
             <View style={s.chipWrap}>
               {FAITHS.map((f) => <Chip key={f} label={f} on={faith === f} onPress={() => setFaith(faith === f ? null : f)} />)}

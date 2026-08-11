@@ -23,7 +23,7 @@ const PACKS: Pack[] = [
   { coins: 6500, price: 499, bonus: "+30% bonus" },
 ];
 
-// Coins are COSMETIC ONLY — gifts, boosts, themes, decorations. They can
+// Coins are COSMETIC ONLY — boosts, themes, profile extras. They can
 // never buy likes, matches, messaging, verification, or safety.
 export default function CoinsScreen() {
   const nav = useNavigation<any>();
@@ -90,7 +90,7 @@ export default function CoinsScreen() {
       <View style={s.infoBanner}>
         <Ionicons name="information-circle-outline" size={18} color={theme.rose} />
         <Text style={s.infoBannerText}>
-          Coins are just for gifts and fun — they never buy likes, matches, or messages.
+          Coins are just for boosts and profile extras — they never buy likes, matches, or messages.
         </Text>
       </View>
 
@@ -139,7 +139,7 @@ export default function CoinsScreen() {
       <View style={s.spendCard}>
         <Text style={s.spendLabel}>WHAT COINS ARE FOR</Text>
         {[
-          ["gift", "Send gifts in chat — a little spark for a match you're talking to"],
+          ["mail", "Send extra Requests — reach someone before you match"],
           ["flash", "Boost your profile to the top of the deck for 30 minutes"],
           ["color-palette", "Unlock profile themes and decorations"],
           ["star", "Send a Super Like with a comment they see instantly"],
