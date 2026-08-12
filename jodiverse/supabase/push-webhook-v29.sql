@@ -64,8 +64,16 @@ create trigger notify_message after insert on public.messages
 
 -- ─── VERIFY ───────────────────────────────────────────────────────────────
 -- Send a message between two test accounts, then:
---   select id, url, status_code, content
+--
+--   select id, status_code, error_msg, content, created
 --     from net._http_response order by created desc limit 5;
+--
+-- (No `url` column on this table — the queue row carrying the URL is dropped
+--  once the response lands.)
+--
 -- 200 with {"ok":true,"pushed":false} = everything works, device just has no
 -- token yet (expected until the dev build — push is dead in Expo Go).
 -- 401 = the key in Vault is wrong. 404 = function not deployed.
+-- No rows at all = the trigger never fired; check it exists:
+--   select tgname, tgenabled from pg_trigger
+--    where tgrelid = 'public.messages'::regclass and not tgisinternal;
