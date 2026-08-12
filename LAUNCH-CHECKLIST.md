@@ -113,7 +113,21 @@ coins **without charging anyone**. Harmless while testing, free money in
 production. Either wire `react-native-purchases` + the `revenuecat-webhook`
 function, or set the flag to `false` and hide the purchase UI before launch.
 
-### 🔲 9. App store assets
+### 🔲 9. Rotate the JWT secret
+The legacy `service_role` key was pasted into a chat transcript on 2026-08-12.
+Only test accounts exist so far, so the exposure is low-stakes — but that key
+bypasses every RLS policy, so it must not survive into production.
+
+Settings → API Keys → JWT Keys → rotate. Rotating invalidates the `anon` key
+at the same time, so immediately after:
+
+- update `jodiverse/.env`
+- update the EAS env vars from §4
+- re-set the Vault secret used by the push webhook (`notify_message_key`)
+
+Cheap to do now, expensive once real users are logged in.
+
+### 🔲 10. App store assets
 Icon (1024×1024), splash, 5–8 screenshots per platform, feature graphic
 (Android), description, keywords, support URL, and the **data safety /
 privacy nutrition label** — fill it from §2 of `website/privacy.html`, which is
