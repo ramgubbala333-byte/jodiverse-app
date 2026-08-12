@@ -1,5 +1,6 @@
-import React, { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import React, { useEffect, useRef, useState } from "react";
+import { AppState, StyleSheet, View } from "react-native";
+import { useIsFocused } from "@react-navigation/native";
 import { GLView } from "expo-gl";
 import GlowBackdrop from "./GlowBackdrop";
 
@@ -43,8 +44,50 @@ void main() {
   gl_FragColor = vec4(finalColor, 1.0);
 }`;
 
+// The effect is a slow ambient drift — 30fps is indistinguishable from 60 here
+// and halves the GPU work on the phones most likely to struggle with it.
+const FRAME_MS = 1000 / 30;
+
 export default function AuroraShaderBackdrop() {
   const [failed, setFailed] = useState(false);
+
+  // The render loop MUST be stoppable from outside onContextCreate. Without
+  // this, every mount left a full-screen 60fps shader running forever — six
+  // screens use this component, tabs keep several alive at once, and the loops
+  // accumulated for as long as the app stayed open.
+  const running = useRef(false);
+  const rafId = useRef<number | null>(null);
+  const drawRef = useRef<(() => void) | null>(null);
+
+  // Only the visible screen animates. A backdrop nobody is looking at has no
+  // business holding the GPU — this is most of the win on a mid-range phone.
+  const focused = useIsFocused();
+  const [active, setActive] = useState(AppState.currentState === "active");
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (s) =>
+      setActive(s === "active"));
+    return () => sub.remove();
+  }, []);
+
+  const shouldRun = focused && active && !failed;
+
+  useEffect(() => {
+    if (shouldRun) {
+      running.current = true;
+      drawRef.current?.();
+    } else {
+      running.current = false;
+      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    }
+    return () => {
+      running.current = false;
+      if (rafId.current !== null) cancelAnimationFrame(rafId.current);
+      rafId.current = null;
+    };
+  }, [shouldRun]);
+
   if (failed) return <GlowBackdrop />;
 
   return (
@@ -77,16 +120,34 @@ export default function AuroraShaderBackdrop() {
             gl.vertexAttribPointer(posLoc, 2, gl.FLOAT, false, 0, 0);
             const timeLoc = gl.getUniformLocation(program, "u_time");
 
-            const start = Date.now();
+            // Accumulate only the time we actually rendered, so pausing and
+            // resuming resumes the drift instead of jumping forward by however
+            // long the screen sat in the background.
+            let elapsed = 0;
+            let last = Date.now();
+
             const frame = () => {
-              const t = (Date.now() - start) / 1000;
-              gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
-              gl.uniform1f(timeLoc, t);
-              gl.drawArrays(gl.TRIANGLES, 0, 6);
-              gl.endFrameEXP();
-              requestAnimationFrame(frame);
+              if (!running.current) { rafId.current = null; return; }
+              const now = Date.now();
+              const dt = now - last;
+              if (dt >= FRAME_MS) {
+                last = now;
+                elapsed += dt / 1000;
+                gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
+                gl.uniform1f(timeLoc, elapsed);
+                gl.drawArrays(gl.TRIANGLES, 0, 6);
+                gl.endFrameEXP();
+              }
+              rafId.current = requestAnimationFrame(frame);
             };
-            frame();
+
+            drawRef.current = () => {
+              if (rafId.current === null) {
+                last = Date.now();
+                rafId.current = requestAnimationFrame(frame);
+              }
+            };
+            if (shouldRun) { running.current = true; drawRef.current(); }
           } catch {
             setFailed(true);
           }

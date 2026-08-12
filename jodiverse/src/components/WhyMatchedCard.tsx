@@ -52,7 +52,7 @@ export default function WhyMatchedCard({ otherId }: { otherId: string }) {
     ]).start();
 
     // 2. Continuous Subtle Breathing Glow Loop
-    Animated.loop(
+    const glow = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseGlow, {
           toValue: 1.06,
@@ -67,7 +67,8 @@ export default function WhyMatchedCard({ otherId }: { otherId: string }) {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    glow.start();
 
     // 3. Staggered Pills Entrance
     Animated.timing(pillsAnim, {
@@ -87,7 +88,7 @@ export default function WhyMatchedCard({ otherId }: { otherId: string }) {
     supabase.rpc("match_score_pct", { other: otherId }).then(({ data, error }) => {
       if (live && !error && typeof data === "number") setScore(data);
     });
-    return () => { live = false; };
+    return () => { live = false; glow.stop(); };
   }, [otherId, gaugeScale, gaugeOpacity, pulseGlow, pillsAnim]);
 
   // Nothing real to say yet (new profiles, or no overlap we can name) —

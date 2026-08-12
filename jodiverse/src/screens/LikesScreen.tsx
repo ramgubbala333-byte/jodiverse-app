@@ -26,7 +26,9 @@ export default function LikesScreen() {
   const listFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.loop(
+    // Hold the handle so it can be stopped — an unstopped loop outlives the
+    // screen and keeps ticking for as long as the app is open.
+    const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.05,
@@ -41,7 +43,9 @@ export default function LikesScreen() {
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    pulse.start();
+    return () => pulse.stop();
   }, [pulseAnim]);
 
   const load = useCallback(async () => {
