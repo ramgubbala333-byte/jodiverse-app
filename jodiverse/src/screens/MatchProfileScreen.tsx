@@ -230,19 +230,28 @@ export default function MatchProfileScreen() {
   if (loading) return <View style={s.center}><ActivityIndicator color={theme.gold} /></View>;
   if (!prof) return <View style={s.center}><Text style={{ color: theme.muted }}>Profile unavailable.</Text></View>;
 
-  const defaultPrompts = [
-    {
-      q: "My simple pleasures...",
-      a: "A quiet Sunday morning with a strong filter coffee, jazz on vinyl, and absolutely nowhere to be.",
-    },
-    {
-      q: "Two truths and a lie...",
-      a: "• I once accidentally crashed a wedding in Tuscany.\n• I can speak four languages fluently.\n• I have never watched a single episode of Friends.",
-    },
-  ];
+  // Never invent profile content. Everything below renders only what this
+  // person actually entered — an empty section is honest, a plausible-looking
+  // default is not. Someone decides whether to meet a stranger based on this
+  // screen, so a fabricated faith, job, or face is a real harm, not a polish
+  // problem. (These defaults arrived with the Stitch design port.)
+  const activePrompts = prof.prompts?.length ? prof.prompts : [];
+  const mainPhoto = photos[0] ?? null;
+  const gallery = photos.slice(1, 3);
 
-  const activePrompts = prof.prompts?.length ? prof.prompts : defaultPrompts;
-  const mainPhoto = photos[0] || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&auto=format&fit=crop&q=80";
+  const basics = [
+    prof.height_cm ? { icon: "resize-outline", text: fmtHeight(prof.height_cm) } : null,
+    prof.faith ? { icon: "planet-outline", text: prof.faith } : null,
+    prof.occupation ? { icon: "briefcase-outline", text: prof.occupation } : null,
+    prof.education ? { icon: "school-outline", text: prof.education } : null,
+  ].filter(Boolean) as { icon: string; text: string }[];
+
+  const lifestyle = [
+    prof.diet ? { icon: "restaurant-outline", text: prof.diet } : null,
+    prof.drinking ? { icon: "wine-outline", text: prof.drinking } : null,
+    prof.smoking ? { icon: "ban-outline", text: prof.smoking } : null,
+    prof.workout ? { icon: "fitness-outline", text: prof.workout } : null,
+  ].filter(Boolean) as { icon: string; text: string }[];
 
   return (
     <Animated.View style={[s.wrap, { opacity: screenFade }]}>
@@ -252,7 +261,15 @@ export default function MatchProfileScreen() {
       >
         {/* ── 1. Hero Main Card (Stitch Exact Layout) ── */}
         <View style={s.heroCardContainer}>
-          <Image source={{ uri: mainPhoto }} style={s.heroImage} resizeMode="cover" />
+          {mainPhoto ? (
+            <Image source={{ uri: mainPhoto }} style={s.heroImage} resizeMode="cover" />
+          ) : (
+            <View style={[s.heroImage, s.heroNoPhoto]}>
+              <Text style={s.heroNoPhotoText}>
+                {prof.display_name?.[0]?.toUpperCase() ?? "?"}
+              </Text>
+            </View>
+          )}
 
           {/* Top-Right Sound/Mute Toggle */}
           <TouchableOpacity activeOpacity={0.8} style={s.soundToggle} onPress={toggleMute}>
@@ -279,13 +296,17 @@ export default function MatchProfileScreen() {
           >
             <View style={s.heroInfoRow}>
               <View style={s.heroTextCol}>
-                <Text style={s.heroName}>{prof.display_name}, {prof.age || 28}</Text>
-                <View style={s.heroLocRow}>
-                  <Ionicons name="location-outline" size={14} color="#8B90A3" />
-                  <Text style={s.heroLocText}>
-                    {prof.city ? `${prof.city}, IN` : "Mumbai, IN"} &bull; {prof.distance_band || "4 miles away"}
-                  </Text>
-                </View>
+                <Text style={s.heroName}>
+                  {prof.display_name}{prof.age ? `, ${prof.age}` : ""}
+                </Text>
+                {(prof.city || prof.distance_band) && (
+                  <View style={s.heroLocRow}>
+                    <Ionicons name="location-outline" size={14} color="#8B90A3" />
+                    <Text style={s.heroLocText}>
+                      {[prof.city, prof.distance_band].filter(Boolean).join(" • ")}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Overlaid Action Buttons with Spring Animation (Pass & Like) */}
@@ -349,82 +370,60 @@ export default function MatchProfileScreen() {
         )}
 
         {/* ── 5. Basics Section ── */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionHeading}>Basics</Text>
-          <View style={s.basicsGrid}>
-            <View style={s.basicItem}>
-              <Ionicons name="resize-outline" size={16} color="#8B90A3" />
-              <Text style={s.basicText}>{prof.height_cm ? fmtHeight(prof.height_cm) : "5'7\" (170cm)"}</Text>
-            </View>
-            <View style={s.basicItem}>
-              <Ionicons name="planet-outline" size={16} color="#8B90A3" />
-              <Text style={s.basicText}>{prof.faith || "Hindu"}</Text>
-            </View>
-            <View style={s.basicItem}>
-              <Ionicons name="briefcase-outline" size={16} color="#8B90A3" />
-              <Text style={s.basicText}>{prof.occupation || "Creative Director"}</Text>
-            </View>
-            <View style={s.basicItem}>
-              <Ionicons name="school-outline" size={16} color="#8B90A3" />
-              <Text style={s.basicText}>{prof.education || "NID Ahmedabad"}</Text>
+        {basics.length > 0 && (
+          <View style={s.sectionCard}>
+            <Text style={s.sectionHeading}>Basics</Text>
+            <View style={s.basicsGrid}>
+              {basics.map((b) => (
+                <View key={b.text} style={s.basicItem}>
+                  <Ionicons name={b.icon as any} size={16} color="#8B90A3" />
+                  <Text style={s.basicText}>{b.text}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        </View>
+        )}
 
         {/* ── 6. Lifestyle Section ── */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionHeading}>Lifestyle</Text>
-          <View style={s.lifestylePillRow}>
-            <View style={s.lifestylePill}>
-              <Ionicons name="restaurant-outline" size={14} color="#8B90A3" />
-              <Text style={s.lifestylePillText}>{prof.diet || "Vegetarian"}</Text>
-            </View>
-            <View style={s.lifestylePill}>
-              <Ionicons name="wine-outline" size={14} color="#8B90A3" />
-              <Text style={s.lifestylePillText}>{prof.drinking || "Socially"}</Text>
-            </View>
-            <View style={s.lifestylePill}>
-              <Ionicons name="ban-outline" size={14} color="#8B90A3" />
-              <Text style={s.lifestylePillText}>{prof.smoking || "Never"}</Text>
-            </View>
-            <View style={s.lifestylePill}>
-              <Ionicons name="fitness-outline" size={14} color="#8B90A3" />
-              <Text style={s.lifestylePillText}>{prof.workout || "Active"}</Text>
+        {lifestyle.length > 0 && (
+          <View style={s.sectionCard}>
+            <Text style={s.sectionHeading}>Lifestyle</Text>
+            <View style={s.lifestylePillRow}>
+              {lifestyle.map((l) => (
+                <View key={l.text} style={s.lifestylePill}>
+                  <Ionicons name={l.icon as any} size={14} color="#8B90A3" />
+                  <Text style={s.lifestylePillText}>{l.text}</Text>
+                </View>
+              ))}
             </View>
           </View>
-        </View>
+        )}
 
         {/* ── 7. Love Language Section ── */}
-        <View style={s.sectionCard}>
-          <Text style={s.sectionHeading}>Love Language</Text>
-          <View style={s.loveLangRow}>
-            <View style={s.loveLangIconCircle}>
-              <Ionicons name="heart-half-outline" size={20} color="#FF7A2E" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={s.loveLangTitle}>{prof.love_language || "Quality Time"}</Text>
-              <Text style={s.loveLangDesc}>Undivided attention matters most.</Text>
+        {!!prof.love_language && (
+          <View style={s.sectionCard}>
+            <Text style={s.sectionHeading}>Love Language</Text>
+            <View style={s.loveLangRow}>
+              <View style={s.loveLangIconCircle}>
+                <Ionicons name="heart-half-outline" size={20} color="#FF7A2E" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.loveLangTitle}>{prof.love_language}</Text>
+              </View>
             </View>
           </View>
-        </View>
+        )}
 
         {/* ── 8. 2-Column Photo Gallery ── */}
-        <View style={s.galleryContainer}>
-          <View style={s.galleryCol}>
-            <Image
-              source={{ uri: photos[1] || "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=80" }}
-              style={s.galleryImg}
-              resizeMode="cover"
-            />
+        {gallery.length > 0 && (
+          <View style={s.galleryContainer}>
+            {gallery.map((uri) => (
+              <View key={uri} style={s.galleryCol}>
+                <Image source={{ uri }} style={s.galleryImg} resizeMode="cover" />
+              </View>
+            ))}
           </View>
-          <View style={s.galleryCol}>
-            <Image
-              source={{ uri: photos[2] || "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&auto=format&fit=crop&q=80" }}
-              style={s.galleryImg}
-              resizeMode="cover"
-            />
-          </View>
-        </View>
+        )}
 
         {/* Comment Modal */}
         <Modal visible={commentOn !== null} transparent animationType="fade" onRequestClose={() => setCommentOn(null)}>
@@ -492,6 +491,9 @@ const s = StyleSheet.create({
     shadowOffset: { width: 0, height: 8 },
     elevation: 8,
   },
+  heroNoPhoto: { alignItems: "center", justifyContent: "center",
+    backgroundColor: theme.card2 },
+  heroNoPhotoText: { color: theme.muted, fontFamily: theme.font.black, fontSize: 64 },
   heroImage: {
     ...StyleSheet.absoluteFillObject,
     width: "100%",

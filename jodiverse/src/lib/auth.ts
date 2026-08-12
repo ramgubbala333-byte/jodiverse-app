@@ -31,16 +31,16 @@ async function createSessionFromUrl(url: string) {
  * new session and navigates automatically.
  */
 export async function signInWithGoogle() {
-  console.log("[auth] redirectTo =", redirectTo);
+  if (__DEV__) console.log("[auth] redirectTo =", redirectTo);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo, skipBrowserRedirect: true },
   });
   if (error) throw error;
-  console.log("[auth] oauth url =", data.url);
+  if (__DEV__) console.log("[auth] oauth url =", data.url);
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  console.log("[auth] browser result =", JSON.stringify(result));
+  if (__DEV__) console.log("[auth] browser result =", JSON.stringify(result));
   if (result.type === "success") {
     return createSessionFromUrl(result.url);
   }

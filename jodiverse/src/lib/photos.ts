@@ -147,17 +147,22 @@ export async function deckPhotoUrls(ownerIds: string[]): Promise<Record<string, 
     .select("owner, storage_path, position")
     .in("owner", ownerIds)
     .order("position");
-  console.log("[deck] photo rows:", data?.length ?? 0, "error:", error?.message ?? "none");
   if (!data?.length) return {};
   const first: Record<string, string> = {};
   for (const p of data) if (!(p.owner in first)) first[p.owner] = p.storage_path;
   const paths = Object.values(first);
   const { data: signed, error: signErr } = await supabase.storage.from("photos").createSignedUrls(paths, 3600);
-  console.log("[deck] signed:", signed?.filter((x) => x.signedUrl).length ?? 0, "/", paths.length,
-    "error:", signErr?.message ?? "none");
+  // Signing can fail per-path (deleted object, expired policy). Returning ""
+  // for those made every caller render <Image uri="" /> — a warning plus a
+  // broken-image box. Omit the owner entirely so the initials fallback runs.
   const byPath: Record<string, string> = {};
-  paths.forEach((path, i) => { byPath[path] = signed?.[i]?.signedUrl ?? ""; });
+  paths.forEach((path, i) => {
+    const url = signed?.[i]?.signedUrl;
+    if (url) byPath[path] = url;
+  });
   const out: Record<string, string> = {};
-  for (const [owner, path] of Object.entries(first)) out[owner] = byPath[path];
+  for (const [owner, path] of Object.entries(first)) {
+    if (byPath[path]) out[owner] = byPath[path];
+  }
   return out;
 }
