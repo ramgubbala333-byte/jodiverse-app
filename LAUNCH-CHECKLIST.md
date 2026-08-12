@@ -16,17 +16,15 @@ These are already written. Nothing else works until they're applied.
 |---|------|-------|
 | 🔲 1 | `bootstrap-mobile-app.sql` | SQL editor — schema, RLS, triggers, deck ✅ *(already run)* |
 | 🔲 2 | `dilmil-parity-v26.sql` | requests, insights, extended deck ✅ *(already run)* |
-| 🔲 3 | `admin-v27.sql` | admin RPCs + real `match_score_pct` — **re-run after the pre-flight-drop fix** |
-| 🔲 4 | `moderation-v28.sql` | photo moderation, block list, `export_my_data()` |
+| ✅ 3 | `admin-v27.sql` | admin RPCs + real `match_score_pct` |
+| ✅ 4 | `moderation-v28.sql` | photo moderation, block list, `export_my_data()` |
+| ✅ 5 | `push-webhook-v29.sql` | messages→notify-message trigger, key in Vault |
 
-Then deploy the edge functions:
+✅ Edge functions deployed 2026-08-12 — `moderate-photo` v1, `likes-you` v9,
+`verify-selfie` v7, `notify-message` v7. Redeploy with:
 
 ```bash
-cd jodiverse
-supabase functions deploy moderate-photo    # new
-supabase functions deploy likes-you         # id-in-payload fix
-supabase functions deploy verify-selfie     # real Play Integrity
-supabase functions deploy notify-message    # routing payload + token pruning
+cd jodiverse && npx supabase functions deploy <name>
 ```
 
 ---
@@ -74,16 +72,10 @@ eas env:create --name EXPO_PUBLIC_GIPHY_KEY         --value <giphy key>   # opti
 
 Repeat per environment (`development` / `preview` / `production`).
 
-### 🔲 5. OAuth redirect URLs
-Supabase → Authentication → URL Configuration → Redirect URLs, add:
-
-```
-dosticonnect://**
-```
-
-Google sign-in works in Expo Go today only because of the dev proxy. **In a real
-build it breaks without this.** Also add the production bundle IDs to the Google
-and Facebook OAuth client configs.
+### ✅ 5. OAuth redirect URLs
+`dosticonnect://**` added to Supabase redirect URLs. Still to do when the store
+listings exist: add the production bundle IDs to the Google and Facebook OAuth
+client configs.
 
 ### 🔲 6. Legal pages must be live and filled in
 `website/privacy.html` and `website/terms.html` are written against how the app
@@ -98,10 +90,9 @@ domain in `eas.json` (currently `https://dosticonnect.app`).
 Code is done — token registration, tap routing into `ChatRoom`, dead-token
 pruning, token deletion on logout. What's left is infrastructure:
 
-- **Database webhook**: run `supabase/push-webhook-v29.sql` (paste your
-  service-role key where marked — it goes into Vault, not the trigger body).
-  The dashboard equivalent is Database → Webhooks → Create, table `messages`,
-  event `INSERT`, type *Supabase Edge Function* → `notify-message`.
+- ✅ **Database webhook** — done 2026-08-12. Verified end-to-end: a new message
+  produces `200 {"ok":true,"pushed":false}` in `net._http_response`.
+  `pushed:false` is correct until a device holds a token.
 - **FCM v1**: upload the service account JSON to Expo
   (`eas credentials` → Android → *FCM V1 service account key*).
 - **APNs**: `eas credentials` → iOS → push key (Expo can generate it).

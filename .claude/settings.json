@@ -66,7 +66,9 @@
       "Bash(git commit *)",
       "Read(//c/Users/ramgu/AppData/Roaming/**)",
       "Read(//c/Users/ramgu/AppData/Local/**)",
-      "Bash(env)"
+      "Bash(env)",
+      "Bash(npx eas-cli@latest whoami)",
+      "Bash(python -c \"import json;d=json.load\\(open\\('app.json'\\)\\);print\\(d['expo'].get\\('extra'\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ramgu\\.claude\\projects\\c--Users-ramgu-OneDrive-Desktop-jodiverse-app\\memory"
