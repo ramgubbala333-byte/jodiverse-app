@@ -63,7 +63,10 @@
       "Bash(sed -n '/create table if not exists matches/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
       "Bash(sed -n '/create table if not exists messages/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
       "Bash(sed -n '/create table if not exists blocks/,/^\\);/p' supabase/bootstrap-mobile-app.sql)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Read(//c/Users/ramgu/AppData/Roaming/**)",
+      "Read(//c/Users/ramgu/AppData/Local/**)",
+      "Bash(env)"
     ],
     "additionalDirectories": [
       "c:\\Users\\ramgu\\.claude\\projects\\c--Users-ramgu-OneDrive-Desktop-jodiverse-app\\memory"

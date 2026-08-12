@@ -98,9 +98,10 @@ domain in `eas.json` (currently `https://dosticonnect.app`).
 Code is done — token registration, tap routing into `ChatRoom`, dead-token
 pruning, token deletion on logout. What's left is infrastructure:
 
-- **Database webhook**: Supabase → Database → Webhooks → Create.
-  Table `messages`, event `INSERT`, type *Supabase Edge Function* →
-  `notify-message`. (The dashboard attaches the service-role header.)
+- **Database webhook**: run `supabase/push-webhook-v29.sql` (paste your
+  service-role key where marked — it goes into Vault, not the trigger body).
+  The dashboard equivalent is Database → Webhooks → Create, table `messages`,
+  event `INSERT`, type *Supabase Edge Function* → `notify-message`.
 - **FCM v1**: upload the service account JSON to Expo
   (`eas credentials` → Android → *FCM V1 service account key*).
 - **APNs**: `eas credentials` → iOS → push key (Expo can generate it).
