@@ -22,10 +22,11 @@
     "android": {
       "package": "com.dosticonnect.app",
       "permissions": [
-        "CAMERA",
-        "RECORD_AUDIO",
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "plugins": [
@@ -59,6 +60,12 @@
           "color": "#0B0D14"
         }
       ]
-    ]
+    ],
+    "owner": "ramgubbala",
+    "extra": {
+      "eas": {
+        "projectId": "1ab9166b-fb4f-47c2-a696-fd2af04ad666"
+      }
+    }
   }
 }

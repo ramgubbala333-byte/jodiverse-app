@@ -68,7 +68,13 @@
       "Read(//c/Users/ramgu/AppData/Local/**)",
       "Bash(env)",
       "Bash(npx eas-cli@latest whoami)",
-      "Bash(python -c \"import json;d=json.load\\(open\\('app.json'\\)\\);print\\(d['expo'].get\\('extra'\\)\\)\")"
+      "Bash(python -c \"import json;d=json.load\\(open\\('app.json'\\)\\);print\\(d['expo'].get\\('extra'\\)\\)\")",
+      "Bash(npx eas-cli *)",
+      "Read(//c/Users/ramgu/.expo/**)",
+      "Bash(python -c ' *)",
+      "Read(//c/Users/ramgu/**)",
+      "Read(//c/Users/ramgu/AppData/Roaming/eas-cli-nodejs/**)",
+      "Bash(python -c \"import json;d=json.load\\(open\\('app.json'\\)\\);print\\('owner:',d['expo'].get\\('owner'\\)\\);print\\('slug:',d['expo'].get\\('slug'\\)\\);print\\('extra:',d['expo'].get\\('extra'\\)\\)\")"
     ],
     "additionalDirectories": [
       "c:\\Users\\ramgu\\.claude\\projects\\c--Users-ramgu-OneDrive-Desktop-jodiverse-app\\memory"
