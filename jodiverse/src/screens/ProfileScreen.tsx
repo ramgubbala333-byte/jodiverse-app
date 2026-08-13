@@ -62,6 +62,8 @@ export default function ProfileScreen() {
   const [traits, setTraits] = useState<string[]>([]);
   const [loveLanguage, setLoveLanguage] = useState<string | null>(null);
   const [workout, setWorkout] = useState<string | null>(null);
+  // Held whole so the strength meter can weigh fields this screen doesn't edit.
+  const [raw, setRaw] = useState<any>(null);
   const [prompts, setPrompts] = useState<Prompt[]>([]);
   const [editSlot, setEditSlot] = useState<number | null>(null); // which slot (0-2) is being edited
   const [pickedQ, setPickedQ] = useState<string | null>(null);
@@ -77,7 +79,7 @@ export default function ProfileScreen() {
     if (!user) return;
     setUid(user.id);
     const { data } = await supabase.from("profiles")
-      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active, prompts, traits, love_language, workout")
+      .select("display_name, bio, city, birthdate, video_path, audio_path, is_verified, is_active, prompts, traits, love_language, workout, interests, faith, languages, height_cm, occupation, education, relationship_goal")
       .eq("id", user.id).maybeSingle();
     if (data) {
       setName(data.display_name); setBio(data.bio ?? ""); setCity(data.city ?? "");
@@ -89,6 +91,7 @@ export default function ProfileScreen() {
       setTraits(Array.isArray(data.traits) ? data.traits : []);
       setLoveLanguage(data.love_language ?? null);
       setWorkout(data.workout ?? null);
+      setRaw(data);
     }
     setPhotos(await listOwnPhotos(user.id));
   }, []);
@@ -220,13 +223,29 @@ export default function ProfileScreen() {
   const preview = () => uid && nav.navigate("MatchProfile",
     { otherId: uid, name: "Preview", self: true });
 
-  // Profile strength — nudges completion the way Hinge/Bumble do.
+  // Profile strength — nudges completion rather than gating on it, which is
+  // what every major app settled on: blocking the product until a form is
+  // finished is the biggest single source of signup drop-off.
+  //
+  // Ordered by real effect on being seen and liked, NOT by how easy each is to
+  // fill in. The old list led with an intro video and a city while ignoring
+  // photo count, prompts, and verification — so it nudged hardest toward the
+  // things that matter least.
   const checks: [boolean, string][] = [
-    [photos.length > 0, "Add a photo"],
-    [!!audioUrl, "Record a voice intro"],
+    [photos.length >= 3, "Add at least 3 photos"],
+    [(raw?.prompts?.length ?? 0) >= 1, "Answer a prompt"],
+    [verified, "Verify your profile — unverified profiles are shown far less"],
+    [(raw?.interests?.length ?? 0) >= 3, "Pick your interests"],
     [!!bio.trim(), "Write a short bio"],
-    [hasVideo, "Add an intro video"],
+    [(raw?.prompts?.length ?? 0) >= 3, "Answer all 3 prompts"],
+    [!!raw?.relationship_goal, "Say what you're looking for"],
+    [!!audioUrl, "Record a voice intro"],
+    [(raw?.languages?.length ?? 0) > 0, "Add the languages you speak"],
+    [!!raw?.occupation, "Add your job"],
+    [!!raw?.education, "Add your education"],
+    [!!raw?.height_cm, "Add your height"],
     [!!city.trim(), "Add your city"],
+    [hasVideo, "Add an intro video"],
   ];
   const done = checks.filter(([ok]) => ok).length;
   const pct = Math.round((done / checks.length) * 100);

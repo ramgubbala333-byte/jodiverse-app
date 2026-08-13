@@ -27,6 +27,20 @@ const TRAIT_OPTIONS = ["Adventurous", "Flexible", "Active Listener", "Easy Going
   "Courageous", "Foodie", "Ambitious", "Funny", "Creative", "Loyal", "Curious"];
 const MAX_TRAITS = 6;
 
+// Prompts were rendered on every profile and in the deck, but nothing ever
+// collected them — so every profile showed an empty personality section.
+// Hinge requires three before it will let you match, on the finding that
+// prompt likes convert to dates far better than photo likes; we ask for one
+// and encourage three, because each extra required field costs signups.
+const MAX_PROMPTS = 3;
+const PROMPT_QUESTIONS = [
+  "My ideal weekend", "I'm looking for...", "Two truths and a lie",
+  "A random fact I love", "My simple pleasures", "Together, we could...",
+  "The way to win me over", "I'll know it's time to delete this app when...",
+  "My most controversial opinion", "Green flags I look for",
+  "A life goal of mine", "My love language is",
+];
+
 // Compatibility questionnaire — the heart of who you get voice-matched with.
 // Stored as profiles.compat jsonb; folded into match_score (compat-v24.sql).
 // [value, label] so the DB key stays stable even if we reword the label.
@@ -92,6 +106,7 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
   const [funFacts, setFunFacts] = useState("");
 
   const [interests, setInterests] = useState<string[]>([]);
+  const [prompts, setPrompts] = useState<{ q: string; a: string }[]>([]);
 
   const [lifestyle, setLifestyle] = useState<string | null>(null);
   const [loveLanguage, setLoveLanguage] = useState<string | null>(null);
@@ -139,12 +154,13 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
   };
 
   // Page list: about (google-only) + 6 fixed pages.
-  const pages = [...(needsAbout ? ["about"] : []), "best", "more", "interests", "lifestyle", "compat", "generate"];
+  const pages = [...(needsAbout ? ["about"] : []), "best", "more", "interests", "prompts", "lifestyle", "compat", "generate"];
   const current = pages[page];
   // Display step (of 4): account was step 1; photos=2, more/interests=3, lifestyle/compat/generate=4.
   const stepInfo: Record<string, [number, string]> = {
     about: [1, "25%"], best: [2, "50%"], more: [3, "75%"],
-    interests: [3, "75%"], lifestyle: [4, "100%"], compat: [4, "100%"], generate: [4, "100%"],
+    interests: [3, "75%"], prompts: [3, "75%"],
+    lifestyle: [4, "100%"], compat: [4, "100%"], generate: [4, "100%"],
   };
   const [stepNo, pct] = stepInfo[current] ?? [2, "50%"];
 
@@ -154,6 +170,7 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
       case "best": return photos.length >= 1 && !!seeking && !!goal;
       case "more": return true; // all optional, but feeds the AI
       case "interests": return interests.length >= 3;
+      case "prompts": return prompts.filter((p) => p.a.trim().length >= 2).length >= 1;
       case "lifestyle": return !!lifestyle;
       case "compat": return COMPAT_QUESTIONS.every((q) => !!compat[q.key]);
       case "generate": return generated || bio.trim().length > 0;
@@ -239,6 +256,9 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
         workout,
         traits,
         interests,
+        prompts: prompts.filter((p) => p.a.trim().length >= 2)
+                        .slice(0, MAX_PROMPTS)
+                        .map((p) => ({ q: p.q, a: p.a.trim() })),
         compat,
         city: city.trim() || null,
         bio: bio.trim() || null,
@@ -398,6 +418,56 @@ export default function OnboardingScreen({ onDone }: { onDone: () => void }) {
             <Text style={[s.counter, { textAlign: "center", marginTop: 18 }]}>
               Selected: {interests.length} interest{interests.length === 1 ? "" : "s"}
             </Text>
+          </>
+        )}
+
+        {current === "prompts" && (
+          <>
+            <PageIcon name="chatbubbles" />
+            <Text style={s.h1}>Say something real</Text>
+            <Text style={s.sub}>
+              Answer at least one — three is better. People like and reply to
+              these far more than to photos alone.
+            </Text>
+
+            {Array.from({ length: MAX_PROMPTS }).map((_, i) => {
+              const chosen = prompts[i];
+              const taken = prompts.filter((_, j) => j !== i).map((p) => p.q);
+              return (
+                <View key={i} style={{ marginTop: i === 0 ? 18 : 22 }}>
+                  <Text style={s.label}>
+                    Prompt {i + 1}{i === 0 ? "" : " (optional)"}
+                  </Text>
+                  <View style={s.chipWrap}>
+                    {PROMPT_QUESTIONS.filter((q) => !taken.includes(q)).map((q) => (
+                      <Chip key={q} label={q} on={chosen?.q === q}
+                        onPress={() => setPrompts((cur) => {
+                          const next = [...cur];
+                          next[i] = { q, a: next[i]?.q === q ? next[i].a : (next[i]?.a ?? "") };
+                          if (next[i].q === chosen?.q && chosen) {
+                            // tapping the selected chip clears the slot
+                            next.splice(i, 1);
+                          }
+                          return next.filter(Boolean);
+                        })} />
+                    ))}
+                  </View>
+                  {!!chosen && (
+                    <TextInput
+                      style={[s.input, { marginTop: 10, minHeight: 76, textAlignVertical: "top" }]}
+                      value={chosen.a}
+                      onChangeText={(a) => setPrompts((cur) => {
+                        const next = [...cur];
+                        next[i] = { ...next[i], a };
+                        return next;
+                      })}
+                      placeholder="Your answer..."
+                      placeholderTextColor={theme.muted}
+                      multiline maxLength={255} />
+                  )}
+                </View>
+              );
+            })}
           </>
         )}
 
