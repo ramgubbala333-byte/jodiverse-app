@@ -19,6 +19,7 @@ These are already written. Nothing else works until they're applied.
 | ✅ 3 | `admin-v27.sql` | admin RPCs + real `match_score_pct` |
 | ✅ 4 | `moderation-v28.sql` | photo moderation, block list, `export_my_data()` |
 | ✅ 5 | `push-webhook-v29.sql` | messages→notify-message trigger, key in Vault |
+| 🔲 6 | `chat-hardening-v30.sql` | stops a match rewriting your sent messages |
 
 ✅ Edge functions deployed 2026-08-12 — `moderate-photo` v1, `likes-you` v9,
 `verify-selfie` v7, `notify-message` v7. Redeploy with:
